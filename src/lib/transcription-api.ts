@@ -21,6 +21,7 @@ export interface SubmitTranscriptionInput {
 }
 
 export type SubmitTranscription = (input: SubmitTranscriptionInput) => Promise<TranscriptionJob>;
+export type GetTranscription = (jobId: string, signal?: AbortSignal) => Promise<TranscriptionJob>;
 
 interface PublicErrorPayload {
   code: string;
@@ -64,16 +65,51 @@ export async function submitTranscription({
       body: formData,
     });
   } catch {
+    throw unavailable();
+  }
+
+  return parseJobResponse(response, 202);
+}
+
+export async function getTranscription(
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<TranscriptionJob> {
+  if (!UUID_PATTERN.test(jobId)) {
     throw new TranscriptionApiError(
-      "BACKEND_UNAVAILABLE",
-      "The Saxo service is currently unavailable. Try again.",
-      null,
-      null,
+      "INVALID_JOB_ID",
+      "Job ID must be a valid UUID.",
+      "job_id",
+      400,
     );
   }
 
+  let response: Response;
+  try {
+    response = await fetch(
+      `${backendBaseUrl()}${TRANSCRIPTIONS_PATH}/${encodeURIComponent(jobId)}`,
+      { method: "GET", signal },
+    );
+  } catch (error) {
+    if (signal?.aborted) {
+      throw error;
+    }
+    throw unavailable();
+  }
+
+  const job = await parseJobResponse(response, 200);
+  if (job.job_id.toLowerCase() !== jobId.toLowerCase()) {
+    throw invalidResponse(response.status);
+  }
+  return job;
+}
+
+async function parseJobResponse(
+  response: Response,
+  expectedStatus: number,
+): Promise<TranscriptionJob> {
   const payload = await readJson(response);
-  if (response.status !== 202) {
+  if (response.status !== expectedStatus) {
     if (isPublicErrorPayload(payload)) {
       throw new TranscriptionApiError(
         payload.code,
@@ -102,6 +138,15 @@ async function readJson(response: Response): Promise<unknown> {
   } catch {
     throw invalidResponse(response.status);
   }
+}
+
+function unavailable(): TranscriptionApiError {
+  return new TranscriptionApiError(
+    "BACKEND_UNAVAILABLE",
+    "The Saxo service is currently unavailable. Try again.",
+    null,
+    null,
+  );
 }
 
 function invalidResponse(status: number | null): TranscriptionApiError {

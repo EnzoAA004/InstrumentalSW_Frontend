@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from "react";
 
 import {
@@ -265,9 +266,14 @@ function CreatedJob({ job, onReset }: { job: TranscriptionJob; onReset: () => vo
         <Detail label="Audio mode" value={job.input_mode} />
         <Detail label="Audio SHA-256" value={job.audio_sha256} technical />
       </dl>
-      <button className="primary-button" type="button" onClick={onReset}>
-        Upload another audio file
-      </button>
+      <div className="result-actions">
+        <Link className="primary-button" href={`/transcriptions/${job.job_id}`}>
+          View job progress
+        </Link>
+        <button className="secondary-button" type="button" onClick={onReset}>
+          Upload another audio file
+        </button>
+      </div>
     </section>
   );
 }

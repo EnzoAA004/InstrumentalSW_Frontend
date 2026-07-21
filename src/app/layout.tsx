@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import "./progress.css";
 
 export const metadata: Metadata = {
   title: "Saxo",
-  description: "Create a saxophone transcription job from an MP3 or WAV file.",
+  description: "Create and inspect a saxophone transcription job from an MP3 or WAV file.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
