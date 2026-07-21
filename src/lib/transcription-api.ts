@@ -21,10 +21,7 @@ export interface SubmitTranscriptionInput {
 }
 
 export type SubmitTranscription = (input: SubmitTranscriptionInput) => Promise<TranscriptionJob>;
-export type GetTranscription = (
-  jobId: string,
-  signal?: AbortSignal,
-) => Promise<TranscriptionJob>;
+export type GetTranscription = (jobId: string, signal?: AbortSignal) => Promise<TranscriptionJob>;
 
 interface PublicErrorPayload {
   code: string;
@@ -107,7 +104,10 @@ export async function getTranscription(
   return job;
 }
 
-async function parseJobResponse(response: Response, expectedStatus: number): Promise<TranscriptionJob> {
+async function parseJobResponse(
+  response: Response,
+  expectedStatus: number,
+): Promise<TranscriptionJob> {
   const payload = await readJson(response);
   if (response.status !== expectedStatus) {
     if (isPublicErrorPayload(payload)) {
