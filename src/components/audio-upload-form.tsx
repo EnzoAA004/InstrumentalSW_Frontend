@@ -162,9 +162,7 @@ export function AudioUploadForm({ submit = submitTranscription }: AudioUploadFor
           <h2>We could not create the job</h2>
           <p>{error.message}</p>
           {error.code !== null ? <p className="technical-line">Code: {error.code}</p> : null}
-          {error.field !== null ? (
-            <p className="technical-line">Field: {error.field}</p>
-          ) : null}
+          {error.field !== null ? <p className="technical-line">Field: {error.field}</p> : null}
           {file !== null ? (
             <button className="secondary-button" type="button" onClick={() => void performSubmit()}>
               Try again

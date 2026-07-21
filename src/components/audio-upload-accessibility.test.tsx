@@ -8,14 +8,16 @@ import { TranscriptionApiError } from "@/lib/transcription-api";
 describe("AudioUploadForm error association", () => {
   it("associates a file error with the complete alert summary", async () => {
     const user = userEvent.setup();
-    const submit = vi.fn().mockRejectedValue(
-      new TranscriptionApiError(
-        "UNSUPPORTED_AUDIO_FORMAT",
-        "Only MP3 and WAV files are supported.",
-        "file",
-        415,
-      ),
-    );
+    const submit = vi
+      .fn()
+      .mockRejectedValue(
+        new TranscriptionApiError(
+          "UNSUPPORTED_AUDIO_FORMAT",
+          "Only MP3 and WAV files are supported.",
+          "file",
+          415,
+        ),
+      );
     render(<AudioUploadForm submit={submit} />);
     const input = screen.getByLabelText("Audio file");
 
