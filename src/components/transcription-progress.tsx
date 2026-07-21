@@ -56,7 +56,7 @@ export function TranscriptionProgress({
   }, []);
 
   const runRequest = useCallback(async () => {
-    if (inFlightRef.current) {
+    if (!mountedRef.current || inFlightRef.current) {
       return;
     }
 
@@ -135,7 +135,9 @@ export function TranscriptionProgress({
   useEffect(() => {
     mountedRef.current = true;
     automaticRef.current = true;
-    void runRequest();
+    queueMicrotask(() => {
+      runRequestRef.current();
+    });
 
     return () => {
       mountedRef.current = false;
@@ -145,7 +147,7 @@ export function TranscriptionProgress({
       controllerRef.current = null;
       inFlightRef.current = false;
     };
-  }, [clearTimer, runRequest]);
+  }, [clearTimer]);
 
   useEffect(() => {
     if (viewState === "error") {
