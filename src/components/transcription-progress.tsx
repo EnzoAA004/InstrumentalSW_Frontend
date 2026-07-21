@@ -46,6 +46,7 @@ export function TranscriptionProgress({
   const requestSequenceRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
+  const runRequestRef = useRef<() => void>(() => undefined);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -91,7 +92,7 @@ export function TranscriptionProgress({
       if (automaticRef.current) {
         timerRef.current = setTimeout(() => {
           timerRef.current = null;
-          void runRequest();
+          runRequestRef.current();
         }, pollIntervalMs);
       }
     } catch (caught) {
@@ -126,9 +127,14 @@ export function TranscriptionProgress({
   }, [clearTimer, jobId, load, pollIntervalMs]);
 
   useEffect(() => {
+    runRequestRef.current = () => {
+      void runRequest();
+    };
+  }, [runRequest]);
+
+  useEffect(() => {
     mountedRef.current = true;
     automaticRef.current = true;
-    setAutomaticUpdates(true);
     void runRequest();
 
     return () => {
