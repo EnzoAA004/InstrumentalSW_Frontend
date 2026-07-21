@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: frontend-quality-${{ github.event.pull_request.number || github.ref }}
@@ -21,8 +21,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Check out repository
+      - name: Check out feature branch
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
       - name: Set up Node.js 24.18.0
         uses: actions/setup-node@v6
         with:
@@ -37,6 +39,22 @@ jobs:
         run: |
           set -o pipefail
           npm run quality 2>&1 | tee quality.log
+      - name: Apply pinned Prettier
+        if: failure()
+        run: npm run format
+      - name: Commit formatter result
+        if: failure()
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No formatter changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src vitest.config.ts
+          git commit -m "style(SAX-040): apply pinned frontend formatter"
+          git push origin HEAD:${{ github.head_ref }}
       - name: Upload failed quality log
         if: failure()
         uses: actions/upload-artifact@v6
