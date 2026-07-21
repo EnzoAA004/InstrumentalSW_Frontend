@@ -1,6 +1,6 @@
 # InstrumentalSW Frontend
 
-Accessible Next.js interface for InstrumentalSW (Saxo). SAX-040 allows a musician to select an MP3/WAV file, choose saxophone type and audio mode, create a transcription job through the Spring Boot product API, and display the returned HTTP 202 job.
+Accessible Next.js interface for InstrumentalSW (Saxo). SAX-040 creates transcription jobs from MP3/WAV files; SAX-041 adds a dedicated read-only route that repeatedly retrieves the current job state through the Spring Boot product API.
 
 ```text
 Browser / Next.js :3000
@@ -8,14 +8,14 @@ Browser / Next.js :3000
     → internal FastAPI AI service :8000
 ```
 
-The frontend never calls or knows the FastAPI URL.
+The browser never calls or configures FastAPI directly.
 
 ## Requirements
 
 - Node.js 24.18.0 LTS
 - npm 11.6.2
 
-Pinned application stack:
+Pinned stack:
 
 ```text
 Next.js:              16.2.11
@@ -29,25 +29,14 @@ Prettier:             3.9.6
 jsdom:                29.1.1
 ```
 
-## Install
+## Install and run
 
 ```bash
 npm ci
-```
-
-## Run
-
-```bash
 npm run dev
 ```
 
-The local page is available at:
-
-```text
-http://localhost:3000
-```
-
-Start the product Backend separately at `http://localhost:8080`. The Backend then contacts FastAPI on port 8000.
+The page runs at `http://localhost:3000`. Start Spring separately at `http://localhost:8080`; Spring contacts FastAPI on port 8000.
 
 ## Configuration
 
@@ -55,11 +44,9 @@ Start the product Backend separately at `http://localhost:8080`. The Backend the
 NEXT_PUBLIC_SAXO_API_BASE_URL=http://localhost:8080
 ```
 
-When the variable is absent, the documented local Backend URL is used. The client always appends `/api/v1/transcriptions`.
+The local Backend URL is the fallback. Both POST and GET append `/api/v1/transcriptions`. Do not configure a FastAPI URL in the browser.
 
-Do not configure the FastAPI port or URL in the browser.
-
-## Quality commands
+## Quality
 
 ```bash
 npm run test
@@ -70,22 +57,18 @@ npm run build
 npm run quality
 ```
 
-`npm run quality` runs the full sequence. Vitest enforces at least 90% global coverage for statements, branches, functions, and lines over new component and client logic.
+`npm run quality` executes the full sequence. Vitest enforces at least 90% global coverage for statements, branches, functions, and lines.
 
-## Upload flow
+## Create a job
 
 1. Select one `.mp3` or `.wav` file.
 2. Choose `soprano`, `alto`, `tenor`, or `baritone`.
 3. Choose `solo` or `mixture`.
 4. Submit manually.
 5. Next.js sends exact multipart fields to Spring Boot.
-6. HTTP 202 displays the complete created job.
+6. HTTP 202 displays all returned job fields.
 
-The file input does not upload automatically, read audio for playback, create an object URL, or show a waveform.
-
-The `mixture` value is accepted because the existing contract records user intent. Source separation is not implemented in SAX-040.
-
-## Public request
+Exact multipart fields:
 
 ```text
 file
@@ -93,36 +76,99 @@ saxophone_type
 input_mode
 ```
 
-The browser lets `fetch` generate the multipart boundary and does not set `Content-Type` manually.
+The browser lets `fetch` create the multipart boundary. It does not upload automatically, read audio for playback, create an object URL, or show a waveform.
 
-Successful results retain:
+The creation result offers both:
 
 ```text
-job_id
-status
-filename
-size_bytes
-audio_sha256
-saxophone_type
-input_mode
+View job progress
+Upload another audio file
 ```
 
-## Accessibility
+## View current job status
 
-- visible labels for every control;
-- error summary with `role="alert"` and programmatic focus;
-- `aria-describedby` associations;
-- textual `aria-live` submitting state;
-- keyboard-operable controls and visible focus;
-- no state communicated only through color;
-- responsive desktop and mobile layout.
+Dynamic route:
 
-## Visual concept
+```text
+/transcriptions/{job_id}
+```
 
-The page uses a warm light background, neutral surfaces, charcoal text, green primary actions, amber focus, visible borders, and readable typography. It uses no blue primary treatment, emoji, component library, or decorative animation.
+The identifier is held in the URL, so the route works after browser reload without localStorage, sessionStorage, or cookies.
+
+The typed client calls only:
+
+```http
+GET ${NEXT_PUBLIC_SAXO_API_BASE_URL}/api/v1/transcriptions/{job_id}
+```
+
+It validates the UUID before `fetch`, accepts only HTTP 200, verifies the complete seven-field job and response identity, and performs no internal retry.
+
+The page displays:
+
+```text
+Job ID
+Current status
+Filename
+Saxophone
+Audio mode
+File size
+Audio SHA-256
+automatic update state
+```
+
+## Polling policy
+
+```text
+first GET: immediate after mount
+interval: 3000 ms after the previous request completes
+maximum concurrent requests: 1
+```
+
+Recursive `setTimeout` prevents overlap. `AbortController`, timer cleanup, and request sequence numbers protect unmount and stale-response cases.
+
+Controls:
+
+```text
+Refresh now
+Pause automatic updates
+Resume automatic updates
+Try again
+Back to upload
+```
+
+The current AI contract defines only:
+
+```text
+UPLOADED → active automatic updates
+FAILED   → terminal, automatic updates stopped
+```
+
+Any other status is displayed exactly, marked as outside the known contract, and pauses automatic updates. Errors also pause polling and require explicit retry. The last valid job remains visible after a transient failure.
+
+## No false progress
+
+The page reports server state only. It does not display a percentage, elapsed-time animation, ETA, simulated model stage, or unsupported status such as PROCESSING or COMPLETED.
+
+## Accessibility and responsive layout
+
+- visible labels and one route title;
+- `aria-live="polite"` for current status and polling text;
+- `role="alert"` and programmatic focus for errors;
+- explicit keyboard-operable controls and visible focus;
+- state represented textually, never only through color;
+- long UUID and SHA-256 values wrap;
+- no mandatory animation;
+- metadata and actions collapse into a single-column mobile layout.
+
+The existing warm light background, neutral surfaces, charcoal text, green actions, amber focus, and visible borders are preserved without a blue primary treatment, emoji, or component library.
 
 ## Boundaries
 
-SAX-040 implements only initial job creation. It does not implement polling, real progress, WebSocket, SSE, progress navigation, audio preview, playback, waveform, dashboard, timeline, score viewer, editing, downloads, authentication, persistence, analytics, SAX-041, or later stories.
+SAX-041 does not implement notes, confidence markers, timeline, score viewing, audio/MIDI playback, editing, downloads, persistence, service workers, background sync, WebSocket, SSE, long polling, authentication, analytics, SAX-042, or later stories.
 
-See [`docs/contracts/audio-upload-ui-v1.md`](docs/contracts/audio-upload-ui-v1.md) and [`docs/tdd/iteration-001.md`](docs/tdd/iteration-001.md).
+Documentation:
+
+- [`docs/contracts/audio-upload-ui-v1.md`](docs/contracts/audio-upload-ui-v1.md)
+- [`docs/contracts/job-progress-ui-v1.md`](docs/contracts/job-progress-ui-v1.md)
+- [`docs/tdd/iteration-001.md`](docs/tdd/iteration-001.md)
+- [`docs/tdd/iteration-002.md`](docs/tdd/iteration-002.md)
