@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: frontend-quality-${{ github.event.pull_request.number || github.ref }}
@@ -21,10 +21,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Check out feature branch
+      - name: Check out repository
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref }}
       - name: Set up Node.js 24.18.0
         uses: actions/setup-node@v6
         with:
@@ -39,22 +37,6 @@ jobs:
         run: |
           set -o pipefail
           npm run quality 2>&1 | tee quality.log
-      - name: Apply pinned Prettier to documentation
-        if: failure()
-        run: npx prettier@3.9.6 --write docs/contracts/audio-upload-ui-v1.md
-      - name: Commit formatted documentation
-        if: failure()
-        shell: bash
-        run: |
-          if git diff --quiet; then
-            echo "No documentation formatting changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/contracts/audio-upload-ui-v1.md
-          git commit -m "style(SAX-040): format frontend upload contract"
-          git push origin HEAD:${{ github.head_ref }}
       - name: Upload quality evidence
         if: always()
         uses: actions/upload-artifact@v6
