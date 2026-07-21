@@ -1,0 +1,39 @@
+name: SAX-041 Format Diagnostics
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Node.js 24.18.0
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.18.0"
+          cache: npm
+      - name: Install pinned npm
+        run: npm install --global npm@11.6.2
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply pinned Prettier
+        run: npm run format
+      - name: Upload formatted sources
+        uses: actions/upload-artifact@v6
+        with:
+          name: sax041-frontend-formatted-sources
+          path: |
+            src/components/transcription-progress-polling.test.tsx
+            src/components/transcription-progress.test.tsx
+            src/components/transcription-progress.tsx
+            src/lib/transcription-api.ts
+          retention-days: 1
