@@ -9,7 +9,7 @@ export default async function TranscriptionPage({ params }: TranscriptionPagePro
 
   return (
     <main className="page-shell">
-      <TranscriptionProgress jobId={jobId} />
+      <TranscriptionProgress key={jobId} jobId={jobId} />
     </main>
   );
 }
