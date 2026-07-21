@@ -11,12 +11,7 @@ import {
 } from "@/lib/transcription-api";
 
 export type ProgressViewState =
-  | "loading"
-  | "active"
-  | "paused"
-  | "terminal"
-  | "error"
-  | "unknown_status";
+  "loading" | "active" | "paused" | "terminal" | "error" | "unknown_status";
 
 interface ProgressError {
   code: string | null;
@@ -191,8 +186,8 @@ export function TranscriptionProgress({
         <p className="eyebrow">InstrumentalSW</p>
         <h1 id="progress-title">Job progress</h1>
         <p className="intro-copy">
-          This page reports the current state returned by the server. It does not estimate a percentage
-          or processing stage.
+          This page reports the current state returned by the server. It does not estimate a
+          percentage or processing stage.
         </p>
       </div>
 
@@ -229,9 +224,7 @@ export function TranscriptionProgress({
 
       <div className="polling-status" aria-live="polite">
         <span>
-          {automaticUpdates
-            ? "Automatic updates are active."
-            : "Automatic updates are paused."}
+          {automaticUpdates ? "Automatic updates are active." : "Automatic updates are paused."}
         </span>
         <span>
           {requestPending
@@ -247,7 +240,12 @@ export function TranscriptionProgress({
       ) : null}
 
       <div className="progress-actions">
-        <button className="secondary-button" type="button" onClick={refresh} disabled={requestPending}>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={refresh}
+          disabled={requestPending}
+        >
           Refresh now
         </button>
         {showPause ? (
