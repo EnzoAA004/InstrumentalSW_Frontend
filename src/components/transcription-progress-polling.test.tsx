@@ -58,6 +58,7 @@ describe("TranscriptionProgress polling lifecycle", () => {
     const load = vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
 
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
+    await settle();
     expect(load).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -143,6 +144,7 @@ describe("TranscriptionProgress polling lifecycle", () => {
       return pending.promise;
     });
     const view = render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
+    await settle();
 
     expect(signal?.aborted).toBe(false);
     view.unmount();
@@ -169,6 +171,7 @@ describe("TranscriptionProgress polling lifecycle", () => {
       });
 
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
+    await settle();
     fireEvent.click(screen.getByRole("button", { name: "Pause automatic updates" }));
     expect(signals[0]?.aborted).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Resume automatic updates" }));
