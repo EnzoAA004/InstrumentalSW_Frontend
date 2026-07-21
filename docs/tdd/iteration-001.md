@@ -41,7 +41,7 @@ build(SAX-040): lock frontend dependencies
 
 The workflow was then restored to read-only `npm ci`.
 
-## RED
+## Initial RED
 
 Tests-only commits preceded production:
 
@@ -110,6 +110,35 @@ Prettier identified four files
 
 The pinned Prettier formatter was applied once to those files and the workflow was restored to read-only operation. Formatting did not change functional expectations.
 
+Next.js added `.next/dev/types/**/*.ts` to the local build workspace. That stable include was recorded explicitly in `tsconfig.json`, and `NEXT_TELEMETRY_DISABLED=1` was fixed in CI before the final build.
+
+## Accessibility regression RED
+
+A final audit found that file-related errors were associated only with the technical `Field: file` line instead of the complete alert summary. A focused test preceded the correction:
+
+```text
+17f99c33b5994ba0d977c8037081bee496e2f1f3
+  test(SAX-040): associate file errors with alert summary
+```
+
+The normal workflow installed Node, npm, and dependencies successfully and then failed in the quality step:
+
+```text
+Quality #21
+run: 29860879497
+job: 88736970005
+result: failure from the new ARIA expectation
+```
+
+Production was corrected after RED:
+
+```text
+8f462fc7c50251a9362be720fdf5928ca98105b0
+  fix(SAX-040): associate file input with complete error alert
+```
+
+For file-related errors, the input now includes `upload-error` in `aria-describedby`, so assistive technology receives the readable message, code, field, and retry action from the complete alert.
+
 ## Test coverage
 
 The suite covers:
@@ -131,20 +160,30 @@ The suite covers:
 - malformed JSON and incompatible UUID, SHA, size, enums, and status;
 - selection preservation and explicit retry;
 - error focus, `role="alert"`, `aria-live`, keyboard traversal, and safe unknown errors;
+- complete alert association through `aria-describedby`;
 - explicit reset for another upload.
 
-The GREEN evidence before final documentation was:
+Final production-head evidence before this documentation update:
 
 ```text
-27 tests passed
+head: 8c80477a146c5b1b90e0d7b5782ad736b98e8e25
+Quality #25
+run: 29861454062
+job: 88738914866
+3 test files passed
+28 tests passed
 92.43% statements
 91.76% branches
 100% functions
 92.43% lines
 ESLint passed
+Prettier passed
+TypeScript passed
+Next.js 16.2.11 production build passed
+static route / generated
 ```
 
-Exact final format, typecheck, build, CI, and unchanged-head evidence is recorded in the draft PR body after the final quality run.
+The draft PR body records the final documentation-only head and its last successful workflow without changing product behavior again.
 
 ## Contract coherence
 
