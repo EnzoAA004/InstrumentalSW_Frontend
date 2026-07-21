@@ -47,7 +47,9 @@ describe("TranscriptionProgress", () => {
 
     expect(await screen.findByText("Current status: FAILED")).toBeVisible();
     expect(screen.getByText("This job is in a terminal failed state.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Pause automatic updates" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Pause automatic updates" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled();
   });
 
