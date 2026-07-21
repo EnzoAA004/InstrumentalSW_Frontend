@@ -1,5 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TranscriptionProgress } from "./transcription-progress";
@@ -26,6 +25,24 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+async function settle() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+async function resolveJob(
+  resolve: (value: TranscriptionJob) => void,
+  job: TranscriptionJob,
+) {
+  await act(async () => {
+    resolve(job);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 describe("TranscriptionProgress polling lifecycle", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -48,8 +65,8 @@ describe("TranscriptionProgress polling lifecycle", () => {
     });
     expect(load).toHaveBeenCalledTimes(1);
 
-    await act(async () => first.resolve(UPLOADED));
-    await screen.findByText("Current status: UPLOADED");
+    await resolveJob(first.resolve, UPLOADED);
+    expect(screen.getByText("Current status: UPLOADED")).toBeVisible();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2_999);
@@ -65,31 +82,33 @@ describe("TranscriptionProgress polling lifecycle", () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
     expect(load).toHaveBeenCalledTimes(2);
-    await act(async () => second.resolve(UPLOADED));
+    await resolveJob(second.resolve, UPLOADED);
   });
 
   it("pause cancels the next timer and resume performs an immediate request", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const load = vi.fn().mockResolvedValue(UPLOADED);
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
-    await screen.findByText("Current status: UPLOADED");
+    await settle();
+    expect(screen.getByText("Current status: UPLOADED")).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "Pause automatic updates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pause automatic updates" }));
     expect(screen.getByText("Automatic updates are paused.")).toBeVisible();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(6_000);
     });
     expect(load).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole("button", { name: "Resume automatic updates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Resume automatic updates" }));
     expect(load).toHaveBeenCalledTimes(2);
-    await screen.findByText("Automatic updates are active.");
+    await settle();
+    expect(screen.getByText("Automatic updates are active.")).toBeVisible();
   });
 
   it.each(["FAILED", "MYSTERY"])("does not poll again after status %s", async (status) => {
     const load = vi.fn().mockResolvedValue({ ...UPLOADED, status });
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
-    await screen.findByText(`Current status: ${status}`);
+    await settle();
+    expect(screen.getByText(`Current status: ${status}`)).toBeVisible();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(6_000);
@@ -107,7 +126,8 @@ describe("TranscriptionProgress polling lifecycle", () => {
       ),
     );
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
-    await screen.findByRole("alert");
+    await settle();
+    expect(screen.getByRole("alert")).toBeVisible();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(9_000);
@@ -134,7 +154,6 @@ describe("TranscriptionProgress polling lifecycle", () => {
   });
 
   it("an obsolete aborted response cannot overwrite a newer result", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const first = deferred<TranscriptionJob>();
     const second = deferred<TranscriptionJob>();
     const signals: AbortSignal[] = [];
@@ -150,16 +169,16 @@ describe("TranscriptionProgress polling lifecycle", () => {
       });
 
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
-    await user.click(screen.getByRole("button", { name: "Pause automatic updates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pause automatic updates" }));
     expect(signals[0]?.aborted).toBe(true);
-    await user.click(screen.getByRole("button", { name: "Resume automatic updates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Resume automatic updates" }));
     expect(load).toHaveBeenCalledTimes(2);
 
-    await act(async () => second.resolve({ ...UPLOADED, filename: "new.wav" }));
-    expect(await screen.findByText("new.wav")).toBeVisible();
+    await resolveJob(second.resolve, { ...UPLOADED, filename: "new.wav" });
+    expect(screen.getByText("new.wav")).toBeVisible();
 
-    await act(async () => first.resolve({ ...UPLOADED, filename: "old.wav" }));
-    await waitFor(() => expect(screen.queryByText("old.wav")).not.toBeInTheDocument());
+    await resolveJob(first.resolve, { ...UPLOADED, filename: "old.wav" });
+    expect(screen.queryByText("old.wav")).not.toBeInTheDocument();
     expect(screen.getByText("new.wav")).toBeVisible();
   });
 });
