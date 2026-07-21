@@ -32,10 +32,7 @@ async function settle() {
   });
 }
 
-async function resolveJob(
-  resolve: (value: TranscriptionJob) => void,
-  job: TranscriptionJob,
-) {
+async function resolveJob(resolve: (value: TranscriptionJob) => void, job: TranscriptionJob) {
   await act(async () => {
     resolve(job);
     await Promise.resolve();
@@ -118,14 +115,16 @@ describe("TranscriptionProgress polling lifecycle", () => {
   });
 
   it("does not retry automatically after an error", async () => {
-    const load = vi.fn().mockRejectedValue(
-      new TranscriptionApiError(
-        "BACKEND_UNAVAILABLE",
-        "The Saxo service is currently unavailable. Try again.",
-        null,
-        null,
-      ),
-    );
+    const load = vi
+      .fn()
+      .mockRejectedValue(
+        new TranscriptionApiError(
+          "BACKEND_UNAVAILABLE",
+          "The Saxo service is currently unavailable. Try again.",
+          null,
+          null,
+        ),
+      );
     render(<TranscriptionProgress jobId={JOB_ID} load={load} />);
     await settle();
     expect(screen.getByRole("alert")).toBeVisible();
