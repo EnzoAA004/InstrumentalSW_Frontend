@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  type ChangeEvent,
-  type FormEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from "react";
 
 import {
   INPUT_MODES,
@@ -158,19 +152,13 @@ export function AudioUploadForm({ submit = submitTranscription }: AudioUploadFor
         <p className="eyebrow">InstrumentalSW</p>
         <h1 id="upload-title">Create a transcription job</h1>
         <p className="intro-copy">
-          Select an MP3 or WAV recording, choose the saxophone and audio mode, then send it
-          securely through the Saxo product API.
+          Select an MP3 or WAV recording, choose the saxophone and audio mode, then send it securely
+          through the Saxo product API.
         </p>
       </div>
 
       {viewState === "error" && error !== null ? (
-        <div
-          className="error-summary"
-          id="upload-error"
-          role="alert"
-          tabIndex={-1}
-          ref={alertRef}
-        >
+        <div className="error-summary" id="upload-error" role="alert" tabIndex={-1} ref={alertRef}>
           <h2>We could not create the job</h2>
           <p>{error.message}</p>
           {error.code !== null ? <p className="technical-line">Code: {error.code}</p> : null}
@@ -244,17 +232,13 @@ export function AudioUploadForm({ submit = submitTranscription }: AudioUploadFor
               ))}
             </select>
             <p className="field-help" id="mode-help">
-              Source separation is not implemented yet. A mixture job can be created, but
-              processing a mixed recording is not promised in this story.
+              Source separation is not implemented yet. A mixture job can be created, but processing
+              a mixed recording is not promised in this story.
             </p>
           </div>
         </div>
 
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={viewState === "submitting"}
-        >
+        <button className="primary-button" type="submit" disabled={viewState === "submitting"}>
           Create transcription job
         </button>
 

@@ -16,7 +16,9 @@ const SUCCESS: TranscriptionJob = {
 };
 
 function audio(name: string, content = "synthetic-audio") {
-  return new File([content], name, { type: name.toLowerCase().endsWith(".mp3") ? "audio/mpeg" : "audio/wav" });
+  return new File([content], name, {
+    type: name.toLowerCase().endsWith(".mp3") ? "audio/mpeg" : "audio/wav",
+  });
 }
 
 function setup(submit = vi.fn().mockResolvedValue(SUCCESS)) {
@@ -102,7 +104,9 @@ describe("AudioUploadForm", () => {
 
   it("submits once with exact selections, disables the button, and announces progress", async () => {
     let resolve!: (job: TranscriptionJob) => void;
-    const submit = vi.fn().mockReturnValue(new Promise<TranscriptionJob>((done) => (resolve = done)));
+    const submit = vi
+      .fn()
+      .mockReturnValue(new Promise<TranscriptionJob>((done) => (resolve = done)));
     const { user } = setup(submit);
     const file = audio("take.wav");
     await choose(user, file);

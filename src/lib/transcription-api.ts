@@ -20,9 +20,7 @@ export interface SubmitTranscriptionInput {
   inputMode: InputMode;
 }
 
-export type SubmitTranscription = (
-  input: SubmitTranscriptionInput,
-) => Promise<TranscriptionJob>;
+export type SubmitTranscription = (input: SubmitTranscriptionInput) => Promise<TranscriptionJob>;
 
 interface PublicErrorPayload {
   code: string;
@@ -30,8 +28,7 @@ interface PublicErrorPayload {
   field: string | null;
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const LOCAL_BACKEND_URL = "http://localhost:8080";
 const TRANSCRIPTIONS_PATH = "/api/v1/transcriptions";
@@ -41,12 +38,7 @@ export class TranscriptionApiError extends Error {
   readonly field: string | null;
   readonly status: number | null;
 
-  constructor(
-    code: string,
-    message: string,
-    field: string | null,
-    status: number | null,
-  ) {
+  constructor(code: string, message: string, field: string | null, status: number | null) {
     super(message);
     this.name = "TranscriptionApiError";
     this.code = code;
