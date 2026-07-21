@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: frontend-quality-${{ github.event.pull_request.number || github.ref }}
@@ -21,32 +21,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Check out feature branch
+      - name: Check out repository
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref }}
       - name: Set up Node.js 24.18.0
         uses: actions/setup-node@v6
         with:
           node-version: "24.18.0"
           cache: npm
-          cache-dependency-path: package.json
       - name: Install pinned npm
         run: npm install --global npm@11.6.2
-      - name: Generate package lock once
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Commit package lock
-        shell: bash
-        run: |
-          if git diff --quiet -- package-lock.json && git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
-            echo "package-lock.json already committed."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "build(SAX-040): lock frontend dependencies"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run quality gate
