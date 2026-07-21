@@ -144,7 +144,7 @@ export function AudioUploadForm({ submit = submitTranscription }: AudioUploadFor
     return <CreatedJob job={job} onReset={reset} />;
   }
 
-  const fileErrorId = error?.field === "file" ? "file-error" : undefined;
+  const fileErrorDescriptionId = error?.field === "file" ? "upload-error" : undefined;
 
   return (
     <section className="upload-card" aria-labelledby="upload-title">
@@ -163,9 +163,7 @@ export function AudioUploadForm({ submit = submitTranscription }: AudioUploadFor
           <p>{error.message}</p>
           {error.code !== null ? <p className="technical-line">Code: {error.code}</p> : null}
           {error.field !== null ? (
-            <p className="technical-line" id={fileErrorId}>
-              Field: {error.field}
-            </p>
+            <p className="technical-line">Field: {error.field}</p>
           ) : null}
           {file !== null ? (
             <button className="secondary-button" type="button" onClick={() => void performSubmit()}>
@@ -184,8 +182,8 @@ export function AudioUploadForm({ submit = submitTranscription }: AudioUploadFor
             name="file"
             type="file"
             accept=".mp3,.wav,audio/mpeg,audio/wav"
-            aria-describedby={["file-help", fileErrorId].filter(Boolean).join(" ")}
-            aria-invalid={fileErrorId !== undefined}
+            aria-describedby={["file-help", fileErrorDescriptionId].filter(Boolean).join(" ")}
+            aria-invalid={fileErrorDescriptionId !== undefined}
             onChange={handleFileChange}
           />
           <p className="field-help" id="file-help">
