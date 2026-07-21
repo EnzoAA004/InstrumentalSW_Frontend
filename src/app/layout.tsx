@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import "./globals.css";
 import "./progress.css";
+import "./review.css";
 
 export const metadata: Metadata = {
   title: "Saxo",
