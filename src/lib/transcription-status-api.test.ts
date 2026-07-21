@@ -107,6 +107,36 @@ describe("getTranscription", () => {
     });
   });
 
+  it("preserves an explicit abort instead of converting it to a network error", async () => {
+    const controller = new AbortController();
+    const aborted = new DOMException("The operation was aborted.", "AbortError");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => {
+        controller.abort();
+        throw aborted;
+      }),
+    );
+
+    await expect(getTranscription(JOB_ID, controller.signal)).rejects.toBe(aborted);
+  });
+
+  it("rejects a valid but different response UUID", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          response(200, { ...SUCCESS, job_id: "22222222-2222-2222-2222-222222222222" }),
+        ),
+    );
+
+    await expect(getTranscription(JOB_ID)).rejects.toMatchObject({
+      code: "INVALID_BACKEND_RESPONSE",
+      status: 200,
+    });
+  });
+
   it.each([
     "not-json",
     JSON.stringify({ ...SUCCESS, job_id: "not-a-uuid" }),
