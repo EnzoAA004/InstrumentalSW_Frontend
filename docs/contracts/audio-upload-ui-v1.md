@@ -48,18 +48,18 @@ Behavior:
 ## Saxophone values
 
 | Visible label | Submitted value |
-| --- | --- |
-| Soprano | `soprano` |
-| Alto | `alto` |
-| Tenor | `tenor` |
-| Baritone | `baritone` |
+| ------------- | --------------- |
+| Soprano       | `soprano`       |
+| Alto          | `alto`          |
+| Tenor         | `tenor`         |
+| Baritone      | `baritone`      |
 
 ## Input-mode values
 
-| Visible label | Submitted value |
-| --- | --- |
-| Solo saxophone | `solo` |
-| Mixture | `mixture` |
+| Visible label  | Submitted value |
+| -------------- | --------------- |
+| Solo saxophone | `solo`          |
+| Mixture        | `mixture`       |
 
 The interface explains that source separation is not implemented. The `mixture` request remains available because the existing contract records the selected mode.
 
