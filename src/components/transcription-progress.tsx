@@ -11,7 +11,12 @@ import {
 } from "@/lib/transcription-api";
 
 export type ProgressViewState =
-  "loading" | "active" | "paused" | "terminal" | "error" | "unknown_status";
+  | "loading"
+  | "active"
+  | "paused"
+  | "terminal"
+  | "error"
+  | "unknown_status";
 
 interface ProgressError {
   code: string | null;
@@ -51,10 +56,7 @@ export function TranscriptionProgress({
   }, []);
 
   const runRequest = useCallback(async () => {
-    if (!mountedRef.current || inFlightRef.current) {
-      return;
-    }
-
+    if (!mountedRef.current || inFlightRef.current) return;
     clearTimer();
     const sequence = ++requestSequenceRef.current;
     const controller = new AbortController();
@@ -65,10 +67,7 @@ export function TranscriptionProgress({
 
     try {
       const current = await load(jobId, controller.signal);
-      if (!mountedRef.current || sequence !== requestSequenceRef.current) {
-        return;
-      }
-
+      if (!mountedRef.current || sequence !== requestSequenceRef.current) return;
       setJob(current);
       if (current.status === "FAILED") {
         automaticRef.current = false;
@@ -82,7 +81,6 @@ export function TranscriptionProgress({
         setViewState("unknown_status");
         return;
       }
-
       setViewState(automaticRef.current ? "active" : "paused");
       if (automaticRef.current) {
         timerRef.current = setTimeout(() => {
@@ -98,42 +96,31 @@ export function TranscriptionProgress({
       ) {
         return;
       }
-
       automaticRef.current = false;
       setAutomaticUpdates(false);
       setViewState("error");
-      if (caught instanceof TranscriptionApiError) {
-        setError({ code: caught.code, message: caught.message });
-      } else {
-        setError({
-          code: null,
-          message: "An unexpected error prevented the status update. Try again.",
-        });
-      }
+      setError(
+        caught instanceof TranscriptionApiError
+          ? { code: caught.code, message: caught.message }
+          : { code: null, message: "An unexpected error prevented the status update. Try again." },
+      );
     } finally {
       if (sequence === requestSequenceRef.current) {
         inFlightRef.current = false;
         controllerRef.current = null;
-        if (mountedRef.current) {
-          setRequestPending(false);
-        }
+        if (mountedRef.current) setRequestPending(false);
       }
     }
   }, [clearTimer, jobId, load, pollIntervalMs]);
 
   useEffect(() => {
-    runRequestRef.current = () => {
-      void runRequest();
-    };
+    runRequestRef.current = () => void runRequest();
   }, [runRequest]);
 
   useEffect(() => {
     mountedRef.current = true;
     automaticRef.current = true;
-    queueMicrotask(() => {
-      runRequestRef.current();
-    });
-
+    queueMicrotask(() => runRequestRef.current());
     return () => {
       mountedRef.current = false;
       clearTimer();
@@ -145,9 +132,7 @@ export function TranscriptionProgress({
   }, [clearTimer]);
 
   useEffect(() => {
-    if (viewState === "error") {
-      alertRef.current?.focus();
-    }
+    if (viewState === "error") alertRef.current?.focus();
   }, [viewState, error]);
 
   function pause() {
@@ -163,9 +148,7 @@ export function TranscriptionProgress({
   }
 
   function resume() {
-    if (inFlightRef.current) {
-      return;
-    }
+    if (inFlightRef.current) return;
     automaticRef.current = true;
     setAutomaticUpdates(true);
     setViewState(job === null ? "loading" : "active");
@@ -186,8 +169,8 @@ export function TranscriptionProgress({
         <p className="eyebrow">InstrumentalSW</p>
         <h1 id="progress-title">Job progress</h1>
         <p className="intro-copy">
-          This page reports the current state returned by the server. It does not estimate a
-          percentage or processing stage.
+          This page reports the current state returned by the server. It does not estimate a percentage
+          or processing stage.
         </p>
       </div>
 
@@ -196,12 +179,7 @@ export function TranscriptionProgress({
           <h2>We could not update the job</h2>
           <p>{error.message}</p>
           {error.code !== null ? <p className="technical-line">Code: {error.code}</p> : null}
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={refresh}
-            disabled={requestPending}
-          >
+          <button className="secondary-button" type="button" onClick={refresh} disabled={requestPending}>
             Try again
           </button>
         </div>
@@ -223,9 +201,7 @@ export function TranscriptionProgress({
       )}
 
       <div className="polling-status" aria-live="polite">
-        <span>
-          {automaticUpdates ? "Automatic updates are active." : "Automatic updates are paused."}
-        </span>
+        <span>{automaticUpdates ? "Automatic updates are active." : "Automatic updates are paused."}</span>
         <span>
           {requestPending
             ? "Checking for updates."
@@ -240,12 +216,7 @@ export function TranscriptionProgress({
       ) : null}
 
       <div className="progress-actions">
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={refresh}
-          disabled={requestPending}
-        >
+        <button className="secondary-button" type="button" onClick={refresh} disabled={requestPending}>
           Refresh now
         </button>
         {showPause ? (
@@ -258,6 +229,9 @@ export function TranscriptionProgress({
             Resume automatic updates
           </button>
         ) : null}
+        <Link className="text-link" href={`/transcriptions/${jobId}/review`}>
+          View notes
+        </Link>
         <Link className="text-link" href="/">
           Back to upload
         </Link>
@@ -284,15 +258,7 @@ function JobDetails({ job }: { job: TranscriptionJob }) {
   );
 }
 
-function Detail({
-  label,
-  value,
-  technical = false,
-}: {
-  label: string;
-  value: string;
-  technical?: boolean;
-}) {
+function Detail({ label, value, technical = false }: { label: string; value: string; technical?: boolean }) {
   return (
     <div className="detail-row">
       <dt>{label}</dt>
