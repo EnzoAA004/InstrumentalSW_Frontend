@@ -173,7 +173,8 @@ export function TranscriptionProgress({
     void runRequest();
   }
 
-  const showPause = automaticUpdates && !["terminal", "error", "unknown_status"].includes(viewState);
+  const showPause =
+    automaticUpdates && !["terminal", "error", "unknown_status"].includes(viewState);
   const showResume = viewState === "paused";
 
   return (
@@ -192,7 +193,12 @@ export function TranscriptionProgress({
           <h2>We could not update the job</h2>
           <p>{error.message}</p>
           {error.code !== null ? <p className="technical-line">Code: {error.code}</p> : null}
-          <button className="secondary-button" type="button" onClick={refresh} disabled={requestPending}>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={refresh}
+            disabled={requestPending}
+          >
             Try again
           </button>
         </div>
@@ -214,10 +220,18 @@ export function TranscriptionProgress({
       )}
 
       <div className="polling-status" aria-live="polite">
-        {automaticUpdates
-          ? "Automatic updates are active."
-          : "Automatic updates are paused."}
-        {requestPending ? " Checking for updates." : " Last request succeeded or is awaiting retry."}
+        <span>
+          {automaticUpdates
+            ? "Automatic updates are active."
+            : "Automatic updates are paused."}
+        </span>
+        <span>
+          {requestPending
+            ? "Checking for updates."
+            : error === null
+              ? "Last request succeeded."
+              : "Waiting for manual retry."}
+        </span>
       </div>
 
       {viewState === "terminal" ? (
