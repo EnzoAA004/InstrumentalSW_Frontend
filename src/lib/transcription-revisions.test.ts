@@ -179,9 +179,11 @@ describe("transcription revision API", () => {
   ])("preserves stable public %i %s errors", async (status, code) => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        response(status, { code, message: "Readable public message.", field: "operations" }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          response(status, { code, message: "Readable public message.", field: "operations" }),
+        ),
     );
     await expect(getTranscriptionRevisionHistory(JOB_ID)).rejects.toMatchObject({ code, status });
   });

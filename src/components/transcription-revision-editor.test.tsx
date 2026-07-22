@@ -189,17 +189,22 @@ describe("TranscriptionRevisionEditor", () => {
   });
 
   it("keeps the local draft after 409 and can reload latest explicitly", async () => {
-    const saveRevision = vi.fn().mockRejectedValue(
-      new TranscriptionApiError(
-        "REVISION_CONFLICT",
-        "The transcription revision has changed.",
-        "base_revision_number",
-        409,
-      ),
-    );
+    const saveRevision = vi
+      .fn()
+      .mockRejectedValue(
+        new TranscriptionApiError(
+          "REVISION_CONFLICT",
+          "The transcription revision has changed.",
+          "base_revision_number",
+          409,
+        ),
+      );
     const latestHistory = { ...HISTORY, latest_revision_number: 1, revision_count: 2 };
     const loadHistory = vi.fn().mockResolvedValueOnce(HISTORY).mockResolvedValueOnce(latestHistory);
-    const loadRevision = vi.fn().mockResolvedValueOnce(REVISION_ZERO).mockResolvedValueOnce(REVISION_ONE);
+    const loadRevision = vi
+      .fn()
+      .mockResolvedValueOnce(REVISION_ZERO)
+      .mockResolvedValueOnce(REVISION_ONE);
     setup({ saveRevision, loadHistory, loadRevision });
     const user = userEvent.setup();
     const written = await screen.findByRole("spinbutton", { name: "Written MIDI for source-0" });
@@ -235,7 +240,10 @@ describe("TranscriptionRevisionEditor", () => {
         },
       ],
     };
-    const loadRevision = vi.fn().mockResolvedValueOnce(REVISION_ONE).mockResolvedValueOnce(REVISION_ZERO);
+    const loadRevision = vi
+      .fn()
+      .mockResolvedValueOnce(REVISION_ONE)
+      .mockResolvedValueOnce(REVISION_ZERO);
     setup({ loadHistory: vi.fn().mockResolvedValue(history), loadRevision });
     const user = userEvent.setup();
     const selector = await screen.findByRole("combobox", { name: "Revision history" });
@@ -271,7 +279,9 @@ describe("TranscriptionRevisionEditor", () => {
     await user.click(await screen.findByRole("button", { name: "Request artifact regeneration" }));
     expect(await screen.findByText("Regeneration requested.")).toBeVisible();
     expect(screen.getByText("No processing worker is connected yet.")).toBeVisible();
-    expect(screen.queryByText(/completed|midi regenerated|score regenerated|eta|%/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/completed|midi regenerated|score regenerated|eta|%/i),
+    ).not.toBeInTheDocument();
   });
 
   it("links back to read-only review and exposes no autosave polling or playback", async () => {

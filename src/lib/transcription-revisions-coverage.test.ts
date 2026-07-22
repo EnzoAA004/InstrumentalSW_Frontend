@@ -142,9 +142,7 @@ describe("draft validation defensive branches", () => {
   it("builds no operations for an unchanged revision and throws for invalid drafts", () => {
     expect(buildRevisionOperations(REVISION, revisionToDraftEvents(REVISION))).toEqual([]);
     expect(() =>
-      buildRevisionOperations(REVISION, [
-        { ...base, written_pitch_midi: "200" },
-      ]),
+      buildRevisionOperations(REVISION, [{ ...base, written_pitch_midi: "200" }]),
     ).toThrow(TranscriptionApiError);
   });
 

@@ -1,8 +1,4 @@
-import {
-  SAXOPHONE_TYPES,
-  TranscriptionApiError,
-  type SaxophoneType,
-} from "./transcription-api";
+import { SAXOPHONE_TYPES, TranscriptionApiError, type SaxophoneType } from "./transcription-api";
 
 export type EventOrigin = "model" | "human";
 export type DerivedArtifactsStatus = "CURRENT" | "STALE" | "REGENERATION_REQUESTED";
@@ -77,9 +73,7 @@ export interface RevisionDeleteOperation {
 }
 
 export type RevisionOperation =
-  | RevisionUpdateOperation
-  | RevisionAddOperation
-  | RevisionDeleteOperation;
+  RevisionUpdateOperation | RevisionAddOperation | RevisionDeleteOperation;
 
 export interface RevisionCreateCommand {
   base_revision_number: number;
@@ -155,11 +149,7 @@ export async function getTranscriptionRevisionHistory(
   signal?: AbortSignal,
 ): Promise<TranscriptionRevisionHistory> {
   validateJobId(jobId);
-  const response = await safeFetch(
-    `${revisionBaseUrl(jobId)}`,
-    { method: "GET", signal },
-    signal,
-  );
+  const response = await safeFetch(`${revisionBaseUrl(jobId)}`, { method: "GET", signal }, signal);
   const payload = await readJson(response);
   throwPublicError(response, payload, 200);
   if (!isRevisionHistory(payload, jobId)) throw invalidResponse(response.status);
@@ -249,7 +239,8 @@ export function validateDraftEvents(
 ): DraftValidationResult {
   const errors: Record<string, string> = {};
   const counts = new Map<string, number>();
-  for (const event of draftEvents) counts.set(event.event_id, (counts.get(event.event_id) ?? 0) + 1);
+  for (const event of draftEvents)
+    counts.set(event.event_id, (counts.get(event.event_id) ?? 0) + 1);
 
   const events = draftEvents.map((event): ValidatedDraftEvent => {
     const prefix = event.event_id;
@@ -426,11 +417,7 @@ function validateCommand(command: RevisionCreateCommand): void {
   }
 }
 
-async function safeFetch(
-  url: string,
-  init: RequestInit,
-  signal?: AbortSignal,
-): Promise<Response> {
+async function safeFetch(url: string, init: RequestInit, signal?: AbortSignal): Promise<Response> {
   try {
     return await fetch(url, init);
   } catch (error) {
@@ -578,8 +565,7 @@ function isRevision(
     !isNonNegativeInteger(value.summary.model_event_count) ||
     !isNonNegativeInteger(value.summary.human_event_count) ||
     value.summary.event_count !== value.events.length ||
-    value.summary.event_count !==
-      value.summary.model_event_count + value.summary.human_event_count
+    value.summary.event_count !== value.summary.model_event_count + value.summary.human_event_count
   ) {
     return false;
   }
@@ -595,7 +581,10 @@ function isRevision(
   return modelCount === value.summary.model_event_count;
 }
 
-function isRevisionEvent(value: unknown, saxophone: SaxophoneType): value is TranscriptionRevisionEvent {
+function isRevisionEvent(
+  value: unknown,
+  saxophone: SaxophoneType,
+): value is TranscriptionRevisionEvent {
   if (
     !hasExactKeys(value, [
       "event_id",

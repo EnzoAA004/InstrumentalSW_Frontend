@@ -57,7 +57,9 @@ function renderEditor(overrides: Record<string, unknown> = {}) {
       jobId={JOB_ID}
       loadHistory={vi.fn().mockResolvedValue(HISTORY)}
       loadRevision={vi.fn().mockResolvedValue(REVISION)}
-      saveRevision={vi.fn().mockResolvedValue({ ...REVISION, revision_number: 1, parent_revision_number: 0 })}
+      saveRevision={vi
+        .fn()
+        .mockResolvedValue({ ...REVISION, revision_number: 1, parent_revision_number: 0 })}
       requestRegeneration={vi.fn()}
       {...overrides}
     />,
@@ -70,7 +72,9 @@ describe("TranscriptionRevisionEditor failure states", () => {
     ["TRANSCRIPTION_NOT_FOUND", "Transcription job not found."],
   ])("renders and focuses the %s load error", async (code, message) => {
     renderEditor({
-      loadHistory: vi.fn().mockRejectedValue(new TranscriptionApiError(code, message, "job_id", 409)),
+      loadHistory: vi
+        .fn()
+        .mockRejectedValue(new TranscriptionApiError(code, message, "job_id", 409)),
     });
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(message);
@@ -85,9 +89,16 @@ describe("TranscriptionRevisionEditor failure states", () => {
   });
 
   it("keeps the draft after a non-conflict save error", async () => {
-    const saveRevision = vi.fn().mockRejectedValue(
-      new TranscriptionApiError("INVALID_REVISION_EVENT", "The revision event is invalid.", "operations", 422),
-    );
+    const saveRevision = vi
+      .fn()
+      .mockRejectedValue(
+        new TranscriptionApiError(
+          "INVALID_REVISION_EVENT",
+          "The revision event is invalid.",
+          "operations",
+          422,
+        ),
+      );
     renderEditor({ saveRevision });
     const user = userEvent.setup();
     const written = await screen.findByRole("spinbutton", { name: "Written MIDI for source-0" });
@@ -96,7 +107,9 @@ describe("TranscriptionRevisionEditor failure states", () => {
     await user.click(screen.getByRole("button", { name: "Save revision" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("The revision event is invalid.");
     expect(written).toHaveValue(70);
-    expect(screen.queryByRole("button", { name: "Reload latest revision" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reload latest revision" }),
+    ).not.toBeInTheDocument();
   });
 
   it("reports a historical revision load error", async () => {
@@ -120,7 +133,14 @@ describe("TranscriptionRevisionEditor failure states", () => {
     const loadRevision = vi
       .fn()
       .mockResolvedValueOnce({ ...REVISION, revision_number: 1, parent_revision_number: 0 })
-      .mockRejectedValueOnce(new TranscriptionApiError("REVISION_NOT_FOUND", "Missing revision.", "revision_number", 404));
+      .mockRejectedValueOnce(
+        new TranscriptionApiError(
+          "REVISION_NOT_FOUND",
+          "Missing revision.",
+          "revision_number",
+          404,
+        ),
+      );
     renderEditor({ loadHistory: vi.fn().mockResolvedValue(history), loadRevision });
     const user = userEvent.setup();
     const selector = await screen.findByRole("combobox", { name: "Revision history" });
@@ -155,7 +175,11 @@ describe("TranscriptionRevisionEditor failure states", () => {
     renderEditor({
       loadHistory: vi.fn().mockResolvedValue(history),
       loadRevision: vi.fn().mockResolvedValue(stale),
-      requestRegeneration: vi.fn().mockRejectedValue(new TranscriptionApiError("AI_SERVICE_ERROR", "Request failed.", null, 502)),
+      requestRegeneration: vi
+        .fn()
+        .mockRejectedValue(
+          new TranscriptionApiError("AI_SERVICE_ERROR", "Request failed.", null, 502),
+        ),
     });
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Request artifact regeneration" }));

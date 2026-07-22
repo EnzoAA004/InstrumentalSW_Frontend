@@ -21,12 +21,7 @@ const REVIEW: TranscriptionReview = {
 
 describe("Transcription review editor navigation", () => {
   it("keeps the read-only view and links explicitly to the editor", async () => {
-    render(
-      <TranscriptionReviewView
-        jobId={JOB_ID}
-        load={vi.fn().mockResolvedValue(REVIEW)}
-      />,
-    );
+    render(<TranscriptionReviewView jobId={JOB_ID} load={vi.fn().mockResolvedValue(REVIEW)} />);
     expect(await screen.findByText("No note events were produced.")).toBeVisible();
     expect(screen.getByRole("link", { name: "Edit notes" })).toHaveAttribute(
       "href",

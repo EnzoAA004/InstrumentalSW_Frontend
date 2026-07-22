@@ -82,7 +82,12 @@ export function TranscriptionRevisionEditor({
   }, [jobId, loadHistory, loadRevision]);
 
   useEffect(() => {
-    if (state === "error" || state === "not_found" || state === "not_ready" || saveState === "conflict") {
+    if (
+      state === "error" ||
+      state === "not_found" ||
+      state === "not_ready" ||
+      saveState === "conflict"
+    ) {
       alertRef.current?.focus();
     }
   }, [state, saveState]);
@@ -95,7 +100,9 @@ export function TranscriptionRevisionEditor({
     [draftEvents, serverRevision],
   );
   const isLatest =
-    history !== null && selectedRevision !== null && selectedRevision === history.latest_revision_number;
+    history !== null &&
+    selectedRevision !== null &&
+    selectedRevision === history.latest_revision_number;
   const operations = useMemo(() => {
     if (serverRevision === null || !validation.isValid || !isLatest) return [];
     try {
@@ -183,7 +190,11 @@ export function TranscriptionRevisionEditor({
     setMessage(null);
     try {
       const loadedHistory = await loadHistory(jobId, controller.signal);
-      const latest = await loadRevision(jobId, loadedHistory.latest_revision_number, controller.signal);
+      const latest = await loadRevision(
+        jobId,
+        loadedHistory.latest_revision_number,
+        controller.signal,
+      );
       setHistory(loadedHistory);
       setServerRevision(latest);
       setSelectedRevision(latest.revision_number);
@@ -272,7 +283,9 @@ export function TranscriptionRevisionEditor({
             ))}
           </select>
 
-          {!isLatest ? <p className="warning-summary">Historical revisions are read-only.</p> : null}
+          {!isLatest ? (
+            <p className="warning-summary">Historical revisions are read-only.</p>
+          ) : null}
 
           <p className="review-summary" aria-live="polite">
             Revision {serverRevision.revision_number} · {draftEvents.length} events
@@ -306,7 +319,9 @@ export function TranscriptionRevisionEditor({
                   return (
                     <tr key={event.event_id}>
                       <td>
-                        <strong>{event.origin === "model" ? "Model event" : "Human-added event"}</strong>
+                        <strong>
+                          {event.origin === "model" ? "Model event" : "Human-added event"}
+                        </strong>
                         <span className="technical-line">{event.event_id}</span>
                       </td>
                       <EditorNumberField
@@ -395,17 +410,14 @@ export function TranscriptionRevisionEditor({
           {serverRevision.derived_artifacts_status === "STALE" ? (
             <div className="warning-summary regeneration-summary">
               <p>Derived artifacts are stale.</p>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => void regenerate()}
-              >
+              <button type="button" className="secondary-button" onClick={() => void regenerate()}>
                 Request artifact regeneration
               </button>
             </div>
           ) : null}
 
-          {regenerationMessage || serverRevision.derived_artifacts_status === "REGENERATION_REQUESTED" ? (
+          {regenerationMessage ||
+          serverRevision.derived_artifacts_status === "REGENERATION_REQUESTED" ? (
             <div className="success-summary" aria-live="polite">
               <p>Regeneration requested.</p>
               <p>No processing worker is connected yet.</p>
