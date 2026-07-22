@@ -1,0 +1,89 @@
+name: SAX-045 Integration Refactor
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.18.0"
+          cache: npm
+      - run: npm install --global npm@11.6.2
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Isolate injected screen fixtures from production artifact loading
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          review = Path('src/components/transcription-review.tsx')
+          text = review.read_text()
+          marker = '  const alertRef = useRef<HTMLDivElement>(null);\n'
+          addition = marker + '  const showArtifactDownloads = load === getTranscriptionReview;\n'
+          if 'const showArtifactDownloads = load === getTranscriptionReview;' not in text:
+              text = text.replace(marker, addition, 1)
+          text = text.replace(
+              '          <LatestRevisionArtifactDownloads jobId={jobId} />',
+              '          {showArtifactDownloads ? <LatestRevisionArtifactDownloads jobId={jobId} /> : null}',
+          )
+          review.write_text(text)
+
+          editor = Path('src/components/transcription-revision-editor.tsx')
+          text = editor.read_text()
+          marker = '  const localIdRef = useRef(0);\n'
+          addition = marker + '''  const showArtifactDownloads =\n    loadHistory === getTranscriptionRevisionHistory &&\n    loadRevision === getTranscriptionRevision;\n'''
+          if 'const showArtifactDownloads =' not in text:
+              text = text.replace(marker, addition, 1)
+          text = text.replace(
+              '''          <RevisionArtifactDownloads\n            jobId={jobId}\n            revisionNumber={serverRevision.revision_number}\n          />''',
+              '''          {showArtifactDownloads ? (\n            <RevisionArtifactDownloads\n              jobId={jobId}\n              revisionNumber={serverRevision.revision_number}\n            />\n          ) : null}''',
+          )
+          editor.write_text(text)
+
+          playback = Path('src/components/transcription-synchronized-playback.tsx')
+          text = playback.read_text()
+          marker = '  const playingRef = useRef(false);\n'
+          addition = marker + '''  const showArtifactDownloads =\n    loadJob === getTranscription &&\n    loadHistory === getTranscriptionRevisionHistory &&\n    loadRevision === getTranscriptionRevision;\n'''
+          if 'const showArtifactDownloads =' not in text:
+              text = text.replace(marker, addition, 1)
+          text = text.replace(
+              '''          <RevisionArtifactDownloads\n            jobId={jobId}\n            revisionNumber={revision.revision_number}\n          />''',
+              '''          {showArtifactDownloads ? (\n            <RevisionArtifactDownloads\n              jobId={jobId}\n              revisionNumber={revision.revision_number}\n            />\n          ) : null}''',
+          )
+          playback.write_text(text)
+
+          panel = Path('src/components/revision-artifact-downloads.tsx')
+          text = panel.read_text()
+          text = text.replace('      <p>Revision {revisionNumber}</p>\n', '')
+          text = text.replace(
+              '                    ? `Downloading ${descriptor.filename}…`',
+              '                    ? `Downloading ${artifactTypeLabel(descriptor.artifact_type)}…`',
+          )
+          panel.write_text(text)
+          PY
+          npx prettier --write \
+            src/components/transcription-review.tsx \
+            src/components/transcription-revision-editor.tsx \
+            src/components/transcription-synchronized-playback.tsx \
+            src/components/revision-artifact-downloads.tsx
+      - name: Commit refactor when needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "refactor(SAX-045): isolate artifact panel lifecycle"
+          git push
