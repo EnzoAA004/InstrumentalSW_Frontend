@@ -65,10 +65,7 @@ export function RevisionArtifactDownloads({
         })
         .catch((error: unknown) => {
           if (!active || controller.signal.aborted) return;
-          if (
-            error instanceof TranscriptionArtifactError &&
-            error.code === "ARTIFACTS_NOT_READY"
-          ) {
+          if (error instanceof TranscriptionArtifactError && error.code === "ARTIFACTS_NOT_READY") {
             setState("not_ready");
             setMessage("Artifacts are not available for this revision yet.");
             return;
@@ -111,15 +108,15 @@ export function RevisionArtifactDownloads({
   }
 
   return (
-    <section className="artifact-downloads" aria-labelledby={`artifact-downloads-${revisionNumber}`}>
+    <section
+      className="artifact-downloads"
+      aria-labelledby={`artifact-downloads-${revisionNumber}`}
+    >
       <h2 id={`artifact-downloads-${revisionNumber}`}>Revision artifact downloads</h2>
-      <p>Revision {revisionNumber}</p>
       <p>Downloads are retrieved through the Saxo product API.</p>
       <p>No public storage URL is exposed.</p>
 
-      {state === "loading" ? (
-        <p aria-live="polite">Loading revision artifacts…</p>
-      ) : null}
+      {state === "loading" ? <p aria-live="polite">Loading revision artifacts…</p> : null}
 
       {state === "not_ready" ? (
         <p className="warning-summary" aria-live="polite">
@@ -160,7 +157,7 @@ export function RevisionArtifactDownloads({
                   onClick={() => void startDownload(descriptor)}
                 >
                   {ownDownload
-                    ? `Downloading ${descriptor.filename}…`
+                    ? `Downloading ${artifactTypeLabel(descriptor.artifact_type)}…`
                     : `Download ${artifactTypeLabel(descriptor.artifact_type)} ${descriptor.filename}`}
                 </button>
               </li>

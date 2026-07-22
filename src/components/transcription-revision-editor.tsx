@@ -51,6 +51,8 @@ export function TranscriptionRevisionEditor({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const localIdRef = useRef(0);
+  const showArtifactDownloads =
+    loadHistory === getTranscriptionRevisionHistory && loadRevision === getTranscriptionRevision;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -425,10 +427,12 @@ export function TranscriptionRevisionEditor({
             </div>
           ) : null}
 
-          <RevisionArtifactDownloads
-            jobId={jobId}
-            revisionNumber={serverRevision.revision_number}
-          />
+          {showArtifactDownloads ? (
+            <RevisionArtifactDownloads
+              jobId={jobId}
+              revisionNumber={serverRevision.revision_number}
+            />
+          ) : null}
         </>
       ) : null}
 

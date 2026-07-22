@@ -27,6 +27,7 @@ export function TranscriptionReviewView({
   const [review, setReview] = useState<TranscriptionReview | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
+  const showArtifactDownloads = load === getTranscriptionReview;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,7 +90,7 @@ export function TranscriptionReviewView({
       {review !== null ? (
         <>
           <ReviewContent review={review} empty={state === "empty"} />
-          <LatestRevisionArtifactDownloads jobId={jobId} />
+          {showArtifactDownloads ? <LatestRevisionArtifactDownloads jobId={jobId} /> : null}
         </>
       ) : null}
 
