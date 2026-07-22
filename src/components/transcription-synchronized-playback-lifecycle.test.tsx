@@ -77,7 +77,9 @@ function audioFile(name: string): File {
   return new File([new TextEncoder().encode("abc")], name, { type: "audio/wav" });
 }
 
-function renderLifecycle(overrides: Partial<React.ComponentProps<typeof TranscriptionSynchronizedPlayback>> = {}) {
+function renderLifecycle(
+  overrides: Partial<React.ComponentProps<typeof TranscriptionSynchronizedPlayback>> = {},
+) {
   const verifyFile = vi.fn().mockResolvedValue({ sizeBytes: 3, sha256: SHA });
   const createObjectUrl = vi.fn((file: File) => `blob:${file.name}`);
   const revokeObjectUrl = vi.fn();
@@ -116,7 +118,8 @@ function renderLifecycle(overrides: Partial<React.ComponentProps<typeof Transcri
 }
 
 async function select(name: string): Promise<HTMLAudioElement> {
-  await userEvent.setup().upload(screen.getByLabelText("Select original audio"), audioFile(name));
+  const input = await screen.findByLabelText("Select original audio");
+  await userEvent.setup().upload(input, audioFile(name));
   return (await screen.findByTestId("verified-local-audio")) as HTMLAudioElement;
 }
 
@@ -130,7 +133,9 @@ describe("local object URL lifecycle", () => {
     expect(lifecycle.createObjectUrl).toHaveBeenCalledTimes(1);
     expect(lifecycle.revokeObjectUrl).not.toHaveBeenCalled();
 
-    await userEvent.setup().upload(screen.getByLabelText("Select original audio"), audioFile("second.wav"));
+    await userEvent
+      .setup()
+      .upload(screen.getByLabelText("Select original audio"), audioFile("second.wav"));
     expect(lifecycle.revokeObjectUrl).toHaveBeenCalledWith("blob:first.wav");
     expect(lifecycle.createObjectUrl).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId("verified-local-audio")).toHaveAttribute("src", "blob:second.wav");
@@ -144,7 +149,9 @@ describe("local object URL lifecycle", () => {
       Object.assign(new Error("mismatch"), { code: "AUDIO_HASH_MISMATCH" }),
     );
     const lifecycle = renderLifecycle({ verifyFile });
-    await userEvent.setup().upload(await screen.findByLabelText("Select original audio"), audioFile("bad.wav"));
+    await userEvent
+      .setup()
+      .upload(await screen.findByLabelText("Select original audio"), audioFile("bad.wav"));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "This file does not match the transcription job.",
     );
@@ -178,12 +185,17 @@ describe("local object URL lifecycle", () => {
     expect(firstSignal.aborted).toBe(true);
 
     resolveSecond({ sizeBytes: 3, sha256: SHA });
-    expect(await screen.findByTestId("verified-local-audio")).toHaveAttribute("src", "blob:second.wav");
+    expect(await screen.findByTestId("verified-local-audio")).toHaveAttribute(
+      "src",
+      "blob:second.wav",
+    );
     resolveFirst({ sizeBytes: 3, sha256: SHA });
     await act(async () => Promise.resolve());
 
     expect(lifecycle.createObjectUrl).toHaveBeenCalledTimes(1);
-    expect(lifecycle.createObjectUrl).toHaveBeenCalledWith(expect.objectContaining({ name: "second.wav" }));
+    expect(lifecycle.createObjectUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "second.wav" }),
+    );
     expect(screen.getByTestId("verified-local-audio")).toHaveAttribute("src", "blob:second.wav");
   });
 
