@@ -1,11 +1,25 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { getTranscriptionRevisionHistory } from "@/lib/transcription-revisions";
+import {
+  getTranscriptionRevisionHistory,
+  type LoadRevisionHistory,
+} from "@/lib/transcription-revisions";
 import { RevisionArtifactDownloads } from "./revision-artifact-downloads";
 
-export function LatestRevisionArtifactDownloads({ jobId }: { jobId: string }) {
+interface LatestRevisionArtifactDownloadsProps {
+  jobId: string;
+  loadHistory?: LoadRevisionHistory;
+  renderDownloads?: (revisionNumber: number) => ReactNode;
+}
+
+export function LatestRevisionArtifactDownloads({
+  jobId,
+  loadHistory = getTranscriptionRevisionHistory,
+  renderDownloads,
+}: LatestRevisionArtifactDownloadsProps) {
   const [revisionNumber, setRevisionNumber] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
@@ -14,7 +28,7 @@ export function LatestRevisionArtifactDownloads({ jobId }: { jobId: string }) {
     const controller = new AbortController();
     let active = true;
     queueMicrotask(() => {
-      void getTranscriptionRevisionHistory(jobId, controller.signal)
+      void loadHistory(jobId, controller.signal)
         .then((history) => {
           if (active) setRevisionNumber(history.latest_revision_number);
         })
@@ -28,7 +42,7 @@ export function LatestRevisionArtifactDownloads({ jobId }: { jobId: string }) {
       active = false;
       controller.abort();
     };
-  }, [jobId]);
+  }, [jobId, loadHistory]);
 
   useEffect(() => {
     if (error !== null) alertRef.current?.focus();
@@ -43,6 +57,9 @@ export function LatestRevisionArtifactDownloads({ jobId }: { jobId: string }) {
   }
   if (revisionNumber === null) {
     return <p aria-live="polite">Loading latest revision for downloads…</p>;
+  }
+  if (renderDownloads !== undefined) {
+    return renderDownloads(revisionNumber);
   }
   return <RevisionArtifactDownloads jobId={jobId} revisionNumber={revisionNumber} />;
 }
