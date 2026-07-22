@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { TranscriptionReviewView } from "./transcription-review";
@@ -107,7 +107,7 @@ describe("TranscriptionReviewView", () => {
     );
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(message);
-    expect(alert).toHaveFocus();
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(screen.getByRole("link", { name: "Back to job progress" })).toHaveAttribute(
       "href",
       `/transcriptions/${JOB_ID}`,

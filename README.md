@@ -1,6 +1,6 @@
 # InstrumentalSW Frontend
 
-Accessible Next.js interface for InstrumentalSW (Saxo). SAX-040 creates transcription jobs, SAX-041 displays current server status with controlled polling, and SAX-042 adds a read-only note timeline and semantic confidence review through the Spring Boot product API.
+Accessible Next.js interface for InstrumentalSW (Saxo). SAX-040 creates transcription jobs, SAX-041 displays current server status, SAX-042 exposes a read-only note review, and SAX-043 adds explicit editing through immutable revisions.
 
 ```text
 Browser / Next.js :3000
@@ -57,7 +57,7 @@ npm run build
 npm run quality
 ```
 
-`npm run quality` executes the full sequence. Vitest enforces at least 90% global coverage for statements, branches, functions, and lines.
+`npm run quality` executes the full sequence. Vitest enforces at least 90% global coverage for statements, branches, functions, and lines. TypeScript runs in strict mode, and a production Next.js build is mandatory.
 
 ## Create a job
 
@@ -70,27 +70,15 @@ npm run quality
 
 The browser lets `fetch` create the multipart boundary. It does not upload automatically, read audio for playback, create an object URL, or show a waveform.
 
-The creation result offers `View job progress` and `Upload another audio file`.
-
 ## View current job status
 
 ```text
 /transcriptions/{job_id}
 ```
 
-The UUID is in the URL, so reload requires no localStorage, sessionStorage, or cookies. The typed client calls only the Backend, validates the complete job and response identity, and performs no internal retry.
+The UUID is in the URL, so reload requires no localStorage, sessionStorage, or cookies. The typed client calls only the Backend and validates the complete response identity.
 
-Polling policy:
-
-```text
-first GET: immediate after mount
-interval: 3000 ms after the previous request completes
-maximum concurrent requests: 1
-```
-
-Recursive `setTimeout`, `AbortController`, cleanup, and request sequence numbers prevent overlap and stale updates. The page retains `Refresh now`, `Pause/Resume automatic updates`, `Try again`, and `Back to upload`, and adds `View notes`.
-
-The AI contract currently defines only `UPLOADED` and `FAILED`; unknown values are displayed exactly and pause polling. No percentage, ETA, or invented stage is shown.
+Polling uses one request at a time, recursive `setTimeout`, `AbortController`, cleanup, and explicit pause/resume controls. No percentage, ETA, or invented stage is shown.
 
 ## View transcription notes
 
@@ -98,62 +86,107 @@ The AI contract currently defines only `UPLOADED` and `FAILED`; unknown values a
 /transcriptions/{job_id}/review
 ```
 
-The route works after reload without browser storage. It sends one bodyless request to:
+The read-only route sends one bodyless GET to Spring, validates the complete versioned payload, and displays all notes in an accessible timeline and semantic table. Confidence remains a model signal and is never presented as calibrated accuracy.
 
-```http
-GET ${NEXT_PUBLIC_SAXO_API_BASE_URL}/api/v1/transcriptions/{job_id}/review
-```
+A successful empty review is distinct from a not-ready result. The view includes an `Edit notes` link to the SAX-043 editor.
 
-The review client validates UUID before fetch, accepts only HTTP 200, verifies all versions, identity, instrument, threshold, confidence metadata, summary counts, event order/indices, MIDI values, timing, velocity, confidence, and low-confidence markers. It performs no retry and no review polling.
-
-Explicit review states:
+## Edit transcription notes
 
 ```text
-loading
-ready
-empty
-not_ready
-not_found
-error
+/transcriptions/{job_id}/review/edit
 ```
 
-A successful empty review shows `No note events were produced.` A 409 shows `Transcription notes are not available yet.` No synthetic timeline is displayed for not-ready work.
-
-## Timeline and table
-
-The HTML/CSS timeline starts at zero, uses the maximum offset as visual duration, derives width from onset/offset, preserves contract order, supports overlapping events, and scrolls horizontally. It does not represent audio, playback, measures, or quantization.
-
-Every event is also present in a semantic table with index, written/concert MIDI, onset, offset, derived duration, velocity, confidence, and confidence status.
-
-Low-confidence events remain visible and use text, dashed borders, a pattern, and accessible description. The page states:
+The editor loads revision history first and then loads the latest revision detail. It keeps three concerns separate:
 
 ```text
-Confidence is a model signal, not calibrated accuracy.
+immutable server revision
+local editable draft
+validation and save state
 ```
 
-Confidence is not converted to a percentage.
+Fetched responses are never mutated. Stable `event_id` values are used as identities and React keys.
+
+The latest revision supports explicit:
+
+- update of written MIDI, onset, and offset;
+- addition of a human note with default velocity 64;
+- deletion with confirmation;
+- discard of local changes;
+- save of one operation batch.
+
+There is no autosave and no request per keystroke.
+
+## Immediate validation
+
+Before saving, the browser validates:
+
+- unique non-empty event IDs;
+- model or human origin;
+- written MIDI as an integer in `0..127`;
+- derived concert MIDI in `0..127` using the saxophone offset;
+- finite non-negative onset;
+- finite offset greater than onset;
+- new-event velocity as an integer in `0..127`.
+
+The browser never sends an independent concert pitch. Spring and FastAPI validate the command again and remain authoritative.
+
+Invalid fields expose inline text, `aria-invalid`, and `aria-describedby`. The save action remains disabled while the draft is invalid or unchanged.
+
+## Immutable history and conflicts
+
+The `Revision history` selector exposes revision zero and every later revision. Only the latest revision is editable; historical revisions load their exact server detail in read-only mode.
+
+A `409 REVISION_CONFLICT`:
+
+- preserves the local draft;
+- focuses a conflict alert;
+- offers an explicit `Reload latest revision` action;
+- never overwrites silently.
+
+Reloading latest is a deliberate user action and replaces the draft only after the new server revision is obtained.
+
+## Derived-artifact request boundary
+
+A newly saved revision is marked stale. The editor can explicitly request regeneration through Spring and displays:
+
+```text
+Regeneration requested.
+No processing worker is connected yet.
+```
+
+The UI does not claim completion, display progress, expose an ETA, receive artifact bytes, or offer a download.
+
+Editing, validation and revision history are implemented.
+
+A regeneration request is recorded explicitly.
+
+Artifact execution remains pending.
 
 ## Accessibility and responsive layout
 
 - one route `h1`;
-- polite live text for loading and summaries;
-- `role="alert"` plus programmatic focus for errors;
-- keyboard-operable links and controls with visible focus;
-- state never represented only by color;
-- wrapping for UUID and technical values;
-- horizontal overflow for timeline/table;
-- responsive navigation and metadata;
+- semantic tables and labeled controls;
+- polite live regions for loading and status;
+- `role="alert"` and programmatic focus for errors and conflicts;
+- inline errors associated with their inputs;
+- keyboard-operable history, links, delete confirmation, save, discard, and regeneration controls;
+- visible focus;
+- state communicated with text rather than color alone;
+- horizontally scrollable tables;
+- responsive action layout;
 - no mandatory animation, emoji, or blue primary treatment.
 
 ## Boundaries
 
-SAX-042 does not implement synthetic notes, inference, direct FastAPI calls, review polling, editing, deletion, regeneration, history, audio/MIDI playback, waveform, synchronization, SVG/PDF, downloads, persistence, service workers, authentication, analytics, SAX-043, or later stories.
+SAX-043 does not include direct FastAPI calls, autosave, review polling, WebSocket, SSE, real-time collaboration, mutation of historical revisions, confidence editing, playback, waveform, synchronization, generated MIDI/MusicXML/SVG bytes, downloads, worker, queue, BackgroundTasks, authentication, SAX-044, or later stories.
 
 Documentation:
 
 - [`docs/contracts/audio-upload-ui-v1.md`](docs/contracts/audio-upload-ui-v1.md)
 - [`docs/contracts/job-progress-ui-v1.md`](docs/contracts/job-progress-ui-v1.md)
 - [`docs/contracts/transcription-review-ui-v1.md`](docs/contracts/transcription-review-ui-v1.md)
+- [`docs/contracts/transcription-revision-editor-v1.md`](docs/contracts/transcription-revision-editor-v1.md)
 - [`docs/tdd/iteration-001.md`](docs/tdd/iteration-001.md)
 - [`docs/tdd/iteration-002.md`](docs/tdd/iteration-002.md)
 - [`docs/tdd/iteration-003.md`](docs/tdd/iteration-003.md)
+- [`docs/tdd/iteration-004.md`](docs/tdd/iteration-004.md)
