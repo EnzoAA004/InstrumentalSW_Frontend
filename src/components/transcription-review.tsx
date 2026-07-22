@@ -88,6 +88,11 @@ export function TranscriptionReviewView({
       {review !== null ? <ReviewContent review={review} empty={state === "empty"} /> : null}
 
       <nav className="progress-actions" aria-label="Review navigation">
+        {review !== null ? (
+          <Link className="text-link" href={`/transcriptions/${jobId}/review/edit`}>
+            Edit notes
+          </Link>
+        ) : null}
         <Link className="text-link" href={`/transcriptions/${jobId}`}>
           Back to job progress
         </Link>
