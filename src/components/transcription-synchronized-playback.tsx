@@ -57,16 +57,22 @@ interface TranscriptionSynchronizedPlaybackProps {
   cancelFrame?: (frameId: number) => void;
 }
 
+const defaultCreateObjectUrl = (file: File): string => URL.createObjectURL(file);
+const defaultRevokeObjectUrl = (url: string): void => URL.revokeObjectURL(url);
+const defaultRequestFrame = (callback: FrameRequestCallback): number =>
+  window.requestAnimationFrame(callback);
+const defaultCancelFrame = (frameId: number): void => window.cancelAnimationFrame(frameId);
+
 export function TranscriptionSynchronizedPlayback({
   jobId,
   loadJob = getTranscription,
   loadHistory = getTranscriptionRevisionHistory,
   loadRevision = getTranscriptionRevision,
   verifyFile = verifyLocalAudioFile,
-  createObjectUrl = (file) => URL.createObjectURL(file),
-  revokeObjectUrl = (url) => URL.revokeObjectURL(url),
-  requestFrame = (callback) => window.requestAnimationFrame(callback),
-  cancelFrame = (frameId) => window.cancelAnimationFrame(frameId),
+  createObjectUrl = defaultCreateObjectUrl,
+  revokeObjectUrl = defaultRevokeObjectUrl,
+  requestFrame = defaultRequestFrame,
+  cancelFrame = defaultCancelFrame,
 }: TranscriptionSynchronizedPlaybackProps) {
   const [state, setState] = useState<PlaybackState>("loading");
   const [job, setJob] = useState<TranscriptionJob | null>(null);
@@ -87,9 +93,8 @@ export function TranscriptionSynchronizedPlayback({
   const playingRef = useRef(false);
 
   const revokeActiveObjectUrl = useCallback(() => {
-    const activeUrl = activeObjectUrlRef.current;
-    if (activeUrl !== null) {
-      revokeObjectUrl(activeUrl);
+    if (activeObjectUrlRef.current !== null) {
+      revokeObjectUrl(activeObjectUrlRef.current);
       activeObjectUrlRef.current = null;
     }
   }, [revokeObjectUrl]);
@@ -102,22 +107,17 @@ export function TranscriptionSynchronizedPlayback({
   }, [cancelFrame]);
 
   const synchronizeFromMedia = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio !== null && Number.isFinite(audio.currentTime)) {
-      setCurrentTime(Math.max(0, audio.currentTime));
-    }
+    const time = audioRef.current?.currentTime;
+    if (typeof time === "number" && Number.isFinite(time)) setCurrentTime(Math.max(0, time));
   }, []);
 
   const startFrameLoop = useCallback(() => {
     playingRef.current = true;
     if (frameRef.current !== null) return;
-
     const tick: FrameRequestCallback = () => {
       frameRef.current = null;
       synchronizeFromMedia();
-      if (playingRef.current) {
-        frameRef.current = requestFrame(tick);
-      }
+      if (playingRef.current) frameRef.current = requestFrame(tick);
     };
     frameRef.current = requestFrame(tick);
   }, [requestFrame, synchronizeFromMedia]);
@@ -130,7 +130,6 @@ export function TranscriptionSynchronizedPlayback({
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-
     queueMicrotask(() => {
       void Promise.all([loadJob(jobId, controller.signal), loadHistory(jobId, controller.signal)])
         .then(async ([loadedJob, loadedHistory]) => {
@@ -151,7 +150,6 @@ export function TranscriptionSynchronizedPlayback({
           setState("api_error");
         });
     });
-
     return () => {
       active = false;
       controller.abort();
@@ -159,9 +157,7 @@ export function TranscriptionSynchronizedPlayback({
   }, [jobId, loadHistory, loadJob, loadRevision]);
 
   useEffect(() => {
-    if (state === "mismatch" || state === "media_error" || state === "api_error") {
-      alertRef.current?.focus();
-    }
+    if (["mismatch", "media_error", "api_error"].includes(state)) alertRef.current?.focus();
   }, [state]);
 
   useEffect(
@@ -184,15 +180,15 @@ export function TranscriptionSynchronizedPlayback({
 
   async function selectLocalAudio(file: File): Promise<void> {
     if (job === null) return;
-
-    verificationSequenceRef.current += 1;
-    const sequence = verificationSequenceRef.current;
+    const sequence = verificationSequenceRef.current + 1;
+    verificationSequenceRef.current = sequence;
     verificationControllerRef.current?.abort();
     const controller = new AbortController();
     verificationControllerRef.current = controller;
 
     stopFrameLoop();
-    audioRef.current?.pause();
+    const currentAudio = audioRef.current;
+    if (currentAudio !== null && !currentAudio.paused) currentAudio.pause();
     revokeActiveObjectUrl();
     setObjectUrl(null);
     setCurrentTime(0);
@@ -208,7 +204,6 @@ export function TranscriptionSynchronizedPlayback({
         signal: controller.signal,
       });
       if (controller.signal.aborted || sequence !== verificationSequenceRef.current) return;
-
       const nextUrl = createObjectUrl(file);
       if (sequence !== verificationSequenceRef.current) {
         revokeObjectUrl(nextUrl);
@@ -246,9 +241,9 @@ export function TranscriptionSynchronizedPlayback({
   }
 
   function handleLoadedMetadata(): void {
-    const audio = audioRef.current;
-    if (audio !== null && Number.isFinite(audio.duration) && audio.duration > 0) {
-      setMediaDuration(audio.duration);
+    const duration = audioRef.current?.duration;
+    if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+      setMediaDuration(duration);
     }
     synchronizeFromMedia();
   }
@@ -279,9 +274,8 @@ export function TranscriptionSynchronizedPlayback({
   }
 
   function seekToEvent(event: TranscriptionRevisionEvent): void {
-    const audio = audioRef.current;
-    if (audio === null) return;
-    audio.currentTime = event.onset_seconds;
+    if (audioRef.current === null) return;
+    audioRef.current.currentTime = event.onset_seconds;
     setCurrentTime(event.onset_seconds);
   }
 
@@ -383,11 +377,7 @@ export function TranscriptionSynchronizedPlayback({
           ) : null}
 
           {beyondDuration.length > 0 ? (
-            <div
-              className="warning-summary"
-              role="alert"
-              aria-label="Timeline duration warning"
-            >
+            <div className="warning-summary" role="alert" aria-label="Timeline duration warning">
               <p>
                 {beyondDuration.join(", ")} extends beyond the decoded audio duration. Event timing
                 remains unchanged.
@@ -436,7 +426,6 @@ function PlaybackTimeline({
   canSeek: boolean;
   onSeek: (event: TranscriptionRevisionEvent) => void;
 }) {
-  const cursorPosition = (currentTime / duration) * 100;
   return (
     <div className="playback-timeline-scroll" aria-label="Synchronized timeline from zero seconds">
       <div
@@ -452,12 +441,10 @@ function PlaybackTimeline({
         <span
           className="playback-cursor"
           aria-label={`Playback cursor at ${formatPlaybackTime(currentTime)}`}
-          style={{ left: `${Math.max(0, cursorPosition)}%` }}
+          style={{ left: `${Math.max(0, (currentTime / duration) * 100)}%` }}
         />
         <ol aria-label="Synchronized revision event timeline">
           {events.map((event, order) => {
-            const left = (event.onset_seconds / duration) * 100;
-            const width = ((event.offset_seconds - event.onset_seconds) / duration) * 100;
             const active = activeEventIds.has(event.event_id);
             return (
               <li
@@ -468,8 +455,8 @@ function PlaybackTimeline({
                 data-onset-seconds={event.onset_seconds}
                 data-offset-seconds={event.offset_seconds}
                 style={{
-                  left: `${left}%`,
-                  width: `${Math.max(width, 1)}%`,
+                  left: `${(event.onset_seconds / duration) * 100}%`,
+                  width: `${Math.max(((event.offset_seconds - event.onset_seconds) / duration) * 100, 1)}%`,
                   top: `${order * 4.8 + 1.8}rem`,
                 }}
               >
@@ -507,7 +494,7 @@ function VerificationStatus({ state }: { state: PlaybackState }) {
       </p>
     );
   }
-  if (state === "ready" || state === "playing" || state === "paused" || state === "ended") {
+  if (["ready", "playing", "paused", "ended"].includes(state)) {
     return (
       <p className="success-summary" aria-live="polite">
         Audio verified locally. The file was not uploaded.
@@ -542,10 +529,7 @@ function playbackStateText(state: PlaybackState): string {
 }
 
 function localVerificationMessage(error: unknown): string {
-  if (
-    error instanceof LocalAudioVerificationError &&
-    error.code === "WEB_CRYPTO_UNAVAILABLE"
-  ) {
+  if (error instanceof LocalAudioVerificationError && error.code === "WEB_CRYPTO_UNAVAILABLE") {
     return "This browser cannot verify the original audio file with Web Crypto.";
   }
   return "This file does not match the transcription job.";
