@@ -121,7 +121,7 @@ describe("TranscriptionRevisionEditor", () => {
     expect(loadRevision).toHaveBeenCalledWith(JOB_ID, 0, expect.any(AbortSignal));
     expect(screen.getByRole("combobox", { name: "Revision history" })).toHaveValue("0");
     expect(screen.getByText("Revision 0 — original")).toBeVisible();
-    expect(screen.getByText("Model event")).toBeVisible();
+    expect(screen.getAllByText("Model event")).toHaveLength(2);
     expect(screen.getByText("Concert MIDI: 60")).toBeVisible();
   });
 
@@ -222,15 +222,18 @@ describe("TranscriptionRevisionEditor", () => {
       job_id: JOB_ID,
       latest_revision_number: 1,
       revision_count: 2,
-      revisions: [HISTORY.revisions[0], {
-        revision_number: 1,
-        parent_revision_number: 0,
-        created_at: "2026-07-22T12:00:00Z",
-        event_count: 2,
-        model_event_count: 1,
-        human_event_count: 1,
-        derived_artifacts_status: "STALE" as const,
-      }],
+      revisions: [
+        HISTORY.revisions[0],
+        {
+          revision_number: 1,
+          parent_revision_number: 0,
+          created_at: "2026-07-22T12:00:00Z",
+          event_count: 2,
+          model_event_count: 1,
+          human_event_count: 1,
+          derived_artifacts_status: "STALE" as const,
+        },
+      ],
     };
     const loadRevision = vi.fn().mockResolvedValueOnce(REVISION_ONE).mockResolvedValueOnce(REVISION_ZERO);
     setup({ loadHistory: vi.fn().mockResolvedValue(history), loadRevision });
@@ -249,15 +252,18 @@ describe("TranscriptionRevisionEditor", () => {
         ...HISTORY,
         latest_revision_number: 1,
         revision_count: 2,
-        revisions: [HISTORY.revisions[0], {
-          revision_number: 1,
-          parent_revision_number: 0,
-          created_at: REVISION_ONE.created_at,
-          event_count: 2,
-          model_event_count: 1,
-          human_event_count: 1,
-          derived_artifacts_status: "STALE",
-        }],
+        revisions: [
+          HISTORY.revisions[0],
+          {
+            revision_number: 1,
+            parent_revision_number: 0,
+            created_at: REVISION_ONE.created_at,
+            event_count: 2,
+            model_event_count: 1,
+            human_event_count: 1,
+            derived_artifacts_status: "STALE",
+          },
+        ],
       }),
       loadRevision: vi.fn().mockResolvedValue(REVISION_ONE),
     });
