@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { RevisionArtifactDownloads } from "./revision-artifact-downloads";
-import { TranscriptionArtifactError, type RevisionArtifactList } from "@/lib/transcription-artifacts";
+import {
+  TranscriptionArtifactError,
+  type RevisionArtifactList,
+} from "@/lib/transcription-artifacts";
 
 const JOB_ID = "11111111-1111-1111-1111-111111111111";
 const SHA = "9f64a747e1b97f131fabb6b447296c9b6f0201e79fb3c5356e6c77e89b6a806a";
@@ -68,7 +71,9 @@ describe("RevisionArtifactDownloads", () => {
     );
 
     expect(screen.getByText("Loading revision artifacts…")).toHaveAttribute("aria-live", "polite");
-    expect(await screen.findByRole("heading", { name: "Revision artifact downloads" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Revision artifact downloads" }),
+    ).toBeVisible();
     expect(screen.getByText("MIDI")).toBeVisible();
     expect(screen.getByText("MusicXML")).toBeVisible();
     expect(screen.getAllByText("SVG")).toHaveLength(2);
@@ -84,18 +89,22 @@ describe("RevisionArtifactDownloads", () => {
       <RevisionArtifactDownloads
         jobId={JOB_ID}
         revisionNumber={2}
-        loadArtifacts={vi.fn().mockRejectedValue(
-          new TranscriptionArtifactError(
-            "ARTIFACTS_NOT_READY",
-            "Artifacts are not available for this revision yet.",
-            "revision_number",
-            409,
-          ),
-        )}
+        loadArtifacts={vi
+          .fn()
+          .mockRejectedValue(
+            new TranscriptionArtifactError(
+              "ARTIFACTS_NOT_READY",
+              "Artifacts are not available for this revision yet.",
+              "revision_number",
+              409,
+            ),
+          )}
       />,
     );
 
-    expect(await screen.findByText("Artifacts are not available for this revision yet.")).toBeVisible();
+    expect(
+      await screen.findByText("Artifacts are not available for this revision yet."),
+    ).toBeVisible();
     expect(screen.queryByRole("button", { name: /Download/ })).not.toBeInTheDocument();
   });
 
@@ -128,7 +137,10 @@ describe("RevisionArtifactDownloads", () => {
 
     await user.click(button);
     expect(button).toBeDisabled();
-    expect(screen.getByText("Downloading transcription-r2.mid…")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("Downloading transcription-r2.mid…")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
     resolveDownload({
       blob: new Blob([new Uint8Array([1, 2, 3, 4])], { type: "audio/midi" }),
       filename: "transcription-r2.mid",
@@ -150,7 +162,9 @@ describe("RevisionArtifactDownloads", () => {
         downloadArtifact={vi.fn().mockRejectedValue(new Error("failure"))}
       />,
     );
-    await user.click(await screen.findByRole("button", { name: "Download MIDI transcription-r2.mid" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Download MIDI transcription-r2.mid" }),
+    );
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveFocus();
     expect(alert).toHaveTextContent("The artifact could not be downloaded safely.");

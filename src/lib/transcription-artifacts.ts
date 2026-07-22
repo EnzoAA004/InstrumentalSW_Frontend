@@ -65,7 +65,11 @@ export async function getRevisionArtifacts(
   signal?: AbortSignal,
 ): Promise<RevisionArtifactList> {
   validateIdentity(jobId, revisionNumber);
-  const response = await safeFetch(artifactBaseUrl(jobId, revisionNumber), { method: "GET", signal }, signal);
+  const response = await safeFetch(
+    artifactBaseUrl(jobId, revisionNumber),
+    { method: "GET", signal },
+    signal,
+  );
   const payload = await readJson(response);
   throwPublicError(response, payload);
   if (!isRevisionArtifactList(payload, jobId, revisionNumber)) {
@@ -115,7 +119,9 @@ export async function downloadRevisionArtifact(
     );
   }
   const digest = await cryptoProvider.subtle.digest("SHA-256", bytes);
-  const calculated = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const calculated = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
   if (calculated !== descriptor.sha256) throw invalidResponse(response.status);
   return {
     blob: new Blob([bytes], { type: descriptor.media_type }),
@@ -127,16 +133,18 @@ export async function downloadRevisionArtifact(
 }
 
 function validateDownloadHeaders(response: Response, descriptor: RevisionArtifactDescriptor): void {
-  if (response.headers.get("Content-Type") !== descriptor.media_type) throw invalidResponse(response.status);
+  if (response.headers.get("Content-Type") !== descriptor.media_type)
+    throw invalidResponse(response.status);
   if (
-    response.headers.get("Content-Disposition") !==
-    `attachment; filename="${descriptor.filename}"`
+    response.headers.get("Content-Disposition") !== `attachment; filename="${descriptor.filename}"`
   ) {
     throw invalidResponse(response.status);
   }
   const length = response.headers.get("Content-Length");
-  if (length !== null && Number(length) !== descriptor.size_bytes) throw invalidResponse(response.status);
-  if (response.headers.get("X-Content-SHA256") !== descriptor.sha256) throw invalidResponse(response.status);
+  if (length !== null && Number(length) !== descriptor.size_bytes)
+    throw invalidResponse(response.status);
+  if (response.headers.get("X-Content-SHA256") !== descriptor.sha256)
+    throw invalidResponse(response.status);
 }
 
 function isRevisionArtifactList(
@@ -221,7 +229,12 @@ function safeFilename(value: string): boolean {
 
 function validateIdentity(jobId: string, revisionNumber: number): void {
   if (!UUID_PATTERN.test(jobId)) {
-    throw new TranscriptionArtifactError("INVALID_JOB_ID", "Job ID must be a valid UUID.", "job_id", 400);
+    throw new TranscriptionArtifactError(
+      "INVALID_JOB_ID",
+      "Job ID must be a valid UUID.",
+      "job_id",
+      400,
+    );
   }
   if (!Number.isSafeInteger(revisionNumber) || revisionNumber < 0) {
     throw new TranscriptionArtifactError(
@@ -238,14 +251,13 @@ function artifactBaseUrl(jobId: string, revisionNumber: number): string {
 }
 
 function backendBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_SAXO_API_BASE_URL?.trim() || LOCAL_BACKEND_URL).replace(/\/+$/, "");
+  return (process.env.NEXT_PUBLIC_SAXO_API_BASE_URL?.trim() || LOCAL_BACKEND_URL).replace(
+    /\/+$/,
+    "",
+  );
 }
 
-async function safeFetch(
-  url: string,
-  init: RequestInit,
-  signal?: AbortSignal,
-): Promise<Response> {
+async function safeFetch(url: string, init: RequestInit, signal?: AbortSignal): Promise<Response> {
   try {
     return await fetch(url, init);
   } catch (error) {
@@ -270,7 +282,12 @@ async function readJson(response: Response): Promise<unknown> {
 function throwPublicError(response: Response, payload: unknown): void {
   if (response.status === 200) return;
   if (isPublicErrorPayload(payload)) {
-    throw new TranscriptionArtifactError(payload.code, payload.message, payload.field, response.status);
+    throw new TranscriptionArtifactError(
+      payload.code,
+      payload.message,
+      payload.field,
+      response.status,
+    );
   }
   throw invalidResponse(response.status);
 }

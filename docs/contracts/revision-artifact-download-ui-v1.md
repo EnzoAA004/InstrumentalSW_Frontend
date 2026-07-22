@@ -66,11 +66,7 @@ The result is:
 
 ```typescript
 {
-  blob,
-  filename,
-  mediaType,
-  sizeBytes,
-  sha256
+  (blob, filename, mediaType, sizeBytes, sha256);
 }
 ```
 

@@ -11,7 +11,9 @@ describe("saveVerifiedArtifactBlob", () => {
     const append = vi.spyOn(document.body, "appendChild");
     const createObjectURL = vi.fn().mockReturnValue("blob:artifact-1");
     const revokeObjectURL = vi.fn();
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
     const blob = new Blob([new Uint8Array([1, 2, 3])], { type: "audio/midi" });
 
     saveVerifiedArtifactBlob(blob, "transcription-r2.mid", { createObjectURL, revokeObjectURL });

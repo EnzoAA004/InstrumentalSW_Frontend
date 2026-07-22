@@ -66,12 +66,23 @@ describe("getRevisionArtifacts", () => {
   });
 
   it.each([
-    ["duplicate order", { ...payload(), artifacts: [payload().artifacts[0], payload().artifacts[0]] }],
+    [
+      "duplicate order",
+      { ...payload(), artifacts: [payload().artifacts[0], payload().artifacts[0]] },
+    ],
     ["PDF", { ...payload(), artifacts: [{ ...payload().artifacts[0], artifact_type: "pdf" }] }],
-    ["unsafe filename", { ...payload(), artifacts: [{ ...payload().artifacts[0], filename: "../x.mid" }] }],
-    ["wrong media", { ...payload(), artifacts: [{ ...payload().artifacts[0], media_type: "image/svg+xml" }] }],
+    [
+      "unsafe filename",
+      { ...payload(), artifacts: [{ ...payload().artifacts[0], filename: "../x.mid" }] },
+    ],
+    [
+      "wrong media",
+      { ...payload(), artifacts: [{ ...payload().artifacts[0], media_type: "image/svg+xml" }] },
+    ],
   ])("rejects incompatible %s metadata", async (_name, body) => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(body), { status: 200 }),
+    );
     await expect(getRevisionArtifacts(JOB_ID, 2)).rejects.toMatchObject({
       code: "INVALID_BACKEND_RESPONSE",
     });

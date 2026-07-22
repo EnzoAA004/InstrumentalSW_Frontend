@@ -28,7 +28,8 @@ function metadata() {
 function digestProvider(hex = SHA): Crypto {
   const result = new ArrayBuffer(32);
   const view = new Uint8Array(result);
-  for (let index = 0; index < 32; index += 1) view[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
+  for (let index = 0; index < 32; index += 1)
+    view[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
   return { subtle: { digest: vi.fn().mockResolvedValue(result) } } as unknown as Crypto;
 }
 
@@ -70,25 +71,30 @@ describe("downloadRevisionArtifact", () => {
     ["size", "5", SHA, digestProvider()],
     ["header hash", "4", "0".repeat(64), digestProvider()],
     ["calculated hash", "4", SHA, digestProvider("0".repeat(64))],
-  ])("rejects incompatible %s without returning a Blob", async (_name, length, headerSha, crypto) => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify(metadata()), { status: 200 }))
-      .mockResolvedValueOnce(
-        new Response(BYTES, {
-          status: 200,
-          headers: {
-            "Content-Type": "audio/midi",
-            "Content-Disposition": 'attachment; filename="transcription-r2.mid"',
-            "Content-Length": length,
-            "X-Content-SHA256": headerSha,
-          },
-        }),
-      );
+  ])(
+    "rejects incompatible %s without returning a Blob",
+    async (_name, length, headerSha, crypto) => {
+      vi.spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response(JSON.stringify(metadata()), { status: 200 }))
+        .mockResolvedValueOnce(
+          new Response(BYTES, {
+            status: 200,
+            headers: {
+              "Content-Type": "audio/midi",
+              "Content-Disposition": 'attachment; filename="transcription-r2.mid"',
+              "Content-Length": length,
+              "X-Content-SHA256": headerSha,
+            },
+          }),
+        );
 
-    await expect(downloadRevisionArtifact(JOB_ID, 2, "midi", undefined, crypto)).rejects.toMatchObject({
-      code: "INVALID_BACKEND_RESPONSE",
-    });
-  });
+      await expect(
+        downloadRevisionArtifact(JOB_ID, 2, "midi", undefined, crypto),
+      ).rejects.toMatchObject({
+        code: "INVALID_BACKEND_RESPONSE",
+      });
+    },
+  );
 
   it("rejects unsafe or mismatched Content-Disposition filenames", async () => {
     vi.spyOn(globalThis, "fetch")
@@ -104,7 +110,9 @@ describe("downloadRevisionArtifact", () => {
           },
         }),
       );
-    await expect(downloadRevisionArtifact(JOB_ID, 2, "midi", undefined, digestProvider())).rejects.toMatchObject({
+    await expect(
+      downloadRevisionArtifact(JOB_ID, 2, "midi", undefined, digestProvider()),
+    ).rejects.toMatchObject({
       code: "INVALID_BACKEND_RESPONSE",
     });
   });
