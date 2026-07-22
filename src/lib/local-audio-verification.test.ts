@@ -11,7 +11,9 @@ import {
 const ABC_SHA256 = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
 
 function syntheticFile(name: string, bytes: Uint8Array = new TextEncoder().encode("abc")): File {
-  return new File([bytes], name, { type: name.toLowerCase().endsWith(".mp3") ? "audio/mpeg" : "audio/wav" });
+  return new File([bytes], name, {
+    type: name.toLowerCase().endsWith(".mp3") ? "audio/mpeg" : "audio/wav",
+  });
 }
 
 function digestProvider(hex = ABC_SHA256): Crypto {
@@ -160,7 +162,9 @@ describe("verifyLocalAudioFile", () => {
     });
     await Promise.resolve();
     during.abort();
-    resolveDigest(Uint8Array.from(ABC_SHA256.match(/.{2}/g) ?? [], (part) => Number.parseInt(part, 16)).buffer);
+    resolveDigest(
+      Uint8Array.from(ABC_SHA256.match(/.{2}/g) ?? [], (part) => Number.parseInt(part, 16)).buffer,
+    );
     await expect(promise).rejects.toMatchObject({ name: "AbortError" });
   });
 

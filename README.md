@@ -162,7 +162,7 @@ No server is claimed to retain the audio.
 The player is native:
 
 ```html
-<audio controls preload="metadata">
+<audio controls preload="metadata"></audio>
 ```
 
 There is no autoplay. Native controls remain visible and default pitch/speed are unchanged.

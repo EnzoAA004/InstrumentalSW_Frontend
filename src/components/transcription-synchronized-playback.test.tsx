@@ -149,10 +149,17 @@ describe("TranscriptionSynchronizedPlayback", () => {
   it("loads job metadata, history, and the latest revision through injected Backend clients", async () => {
     const { loadJob, loadHistory, loadRevision } = renderPlayback();
 
-    expect(screen.getByText("Loading synchronized playback…")).toHaveAttribute("aria-live", "polite");
-    expect(await screen.findByRole("heading", { name: "Synchronized review playback" })).toBeVisible();
+    expect(screen.getByText("Loading synchronized playback…")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Synchronized review playback" }),
+    ).toBeVisible();
     expect(await screen.findByText("Revision 2")).toBeVisible();
-    expect(screen.getByText("Select the original MP3 or WAV used for this transcription.")).toBeVisible();
+    expect(
+      screen.getByText("Select the original MP3 or WAV used for this transcription."),
+    ).toBeVisible();
     expect(screen.queryByTestId("verified-local-audio")).not.toBeInTheDocument();
     expect(loadJob).toHaveBeenCalledWith(JOB_ID, expect.any(AbortSignal));
     expect(loadHistory).toHaveBeenCalledWith(JOB_ID, expect.any(AbortSignal));
@@ -166,7 +173,9 @@ describe("TranscriptionSynchronizedPlayback", () => {
 
     await user.upload(await screen.findByLabelText("Select original audio"), selected);
 
-    expect(await screen.findByText("Audio verified locally. The file was not uploaded.")).toBeVisible();
+    expect(
+      await screen.findByText("Audio verified locally. The file was not uploaded."),
+    ).toBeVisible();
     const audio = screen.getByTestId("verified-local-audio");
     expect(audio).toHaveAttribute("controls");
     expect(audio).toHaveAttribute("preload", "metadata");
@@ -258,16 +267,26 @@ describe("TranscriptionSynchronizedPlayback", () => {
       summary: { event_count: 1, model_event_count: 0, human_event_count: 1 },
     };
     const loadHistory = vi.fn().mockResolvedValueOnce(HISTORY).mockResolvedValueOnce(newerHistory);
-    const loadRevision = vi.fn().mockResolvedValueOnce(REVISION).mockResolvedValueOnce(newerRevision);
+    const loadRevision = vi
+      .fn()
+      .mockResolvedValueOnce(REVISION)
+      .mockResolvedValueOnce(newerRevision);
     const user = userEvent.setup();
     const { verifyFile, createObjectUrl } = renderPlayback({ loadHistory, loadRevision });
     const audio = await attachAudio(user);
-    Object.defineProperty(audio, "currentTime", { configurable: true, writable: true, value: 0.75 });
+    Object.defineProperty(audio, "currentTime", {
+      configurable: true,
+      writable: true,
+      value: 0.75,
+    });
 
     await user.click(screen.getByRole("button", { name: "Reload latest revision" }));
 
     expect(await screen.findByText("Revision 3")).toBeVisible();
-    expect(screen.getByTestId("verified-local-audio")).toHaveAttribute("src", "blob:verified-audio");
+    expect(screen.getByTestId("verified-local-audio")).toHaveAttribute(
+      "src",
+      "blob:verified-audio",
+    );
     expect((screen.getByTestId("verified-local-audio") as HTMLAudioElement).currentTime).toBe(0.75);
     expect(verifyFile).toHaveBeenCalledTimes(1);
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
@@ -297,9 +316,9 @@ describe("TranscriptionSynchronizedPlayback", () => {
   });
 
   it("shows controlled mismatch and media decode errors with focused alerts", async () => {
-    const verifyFile = vi.fn().mockRejectedValue(
-      Object.assign(new Error("mismatch"), { code: "AUDIO_HASH_MISMATCH" }),
-    );
+    const verifyFile = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error("mismatch"), { code: "AUDIO_HASH_MISMATCH" }));
     const user = userEvent.setup();
     const first = renderPlayback({ verifyFile });
     await user.upload(await screen.findByLabelText("Select original audio"), file());
@@ -334,7 +353,11 @@ describe("TranscriptionSynchronizedPlayback", () => {
       resolveVerification({ sizeBytes: 3, sha256: SHA });
     });
     const audio = await screen.findByTestId("verified-local-audio");
-    Object.defineProperty(audio, "currentTime", { configurable: true, writable: true, value: 0.75 });
+    Object.defineProperty(audio, "currentTime", {
+      configurable: true,
+      writable: true,
+      value: 0.75,
+    });
     fireEvent.timeUpdate(audio);
     expect(screen.getByRole("listitem", { name: /source-0/i })).toHaveTextContent("Active now");
     expect(screen.getByRole("listitem", { name: /human-1/i })).toHaveTextContent("Active now");

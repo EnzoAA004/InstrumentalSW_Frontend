@@ -145,9 +145,9 @@ describe("local object URL lifecycle", () => {
   });
 
   it("does not create or retain a URL for mismatch", async () => {
-    const verifyFile = vi.fn().mockRejectedValue(
-      Object.assign(new Error("mismatch"), { code: "AUDIO_HASH_MISMATCH" }),
-    );
+    const verifyFile = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error("mismatch"), { code: "AUDIO_HASH_MISMATCH" }));
     const lifecycle = renderLifecycle({ verifyFile });
     await userEvent
       .setup()

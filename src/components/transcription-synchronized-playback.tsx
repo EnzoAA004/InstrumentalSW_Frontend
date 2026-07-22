@@ -170,7 +170,7 @@ export function TranscriptionSynchronizedPlayback({
     [revokeActiveObjectUrl, stopFrameLoop],
   );
 
-  const events = revision?.events ?? [];
+  const events = useMemo(() => revision?.events ?? [], [revision]);
   const timelineDuration = resolveTimelineDuration(events, mediaDuration);
   const activeEventIds = useMemo(
     () => new Set(activePlaybackEventIds(events, currentTime)),

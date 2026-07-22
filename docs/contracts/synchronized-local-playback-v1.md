@@ -116,7 +116,7 @@ The server is not claimed to retain the audio.
 After verification, the route renders:
 
 ```html
-<audio controls preload="metadata">
+<audio controls preload="metadata"></audio>
 ```
 
 There is no autoplay. Playback requires user action and native controls remain available. Pitch and playback speed are not modified.
