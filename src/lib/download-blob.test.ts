@@ -2,15 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { saveVerifiedArtifactBlob } from "./download-blob";
 
-const append = vi.spyOn(document.body, "appendChild");
-
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe("saveVerifiedArtifactBlob", () => {
   it("creates one temporary link, clicks, removes, and revokes its object URL", () => {
+    const append = vi.spyOn(document.body, "appendChild");
     const createObjectURL = vi.fn().mockReturnValue("blob:artifact-1");
     const revokeObjectURL = vi.fn();
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
@@ -25,7 +23,6 @@ describe("saveVerifiedArtifactBlob", () => {
     expect(link.href).toContain("blob:artifact-1");
     expect(document.body.contains(link)).toBe(false);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:artifact-1");
-    expect(window.open).not.toHaveBeenCalled;
   });
 
   it("revokes and removes the link when clicking throws", () => {
