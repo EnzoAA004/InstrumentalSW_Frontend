@@ -48,10 +48,7 @@ function renderReview(load = vi.fn().mockResolvedValue(REVIEW)) {
 describe("TranscriptionReviewView", () => {
   it("renders loading then complete semantic table and timeline", async () => {
     const load = renderReview();
-    expect(screen.getByText("Loading transcription notes…")).toHaveAttribute(
-      "aria-live",
-      "polite",
-    );
+    expect(screen.getByText("Loading transcription notes…")).toHaveAttribute("aria-live", "polite");
 
     expect(await screen.findByRole("heading", { name: "Transcription notes" })).toBeVisible();
     expect(load).toHaveBeenCalledTimes(1);
