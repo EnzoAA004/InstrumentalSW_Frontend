@@ -1,0 +1,46 @@
+name: SAX-044 Format Diagnostics
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.18.0"
+          cache: npm
+      - run: npm install --global npm@11.6.2
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply hook correction and pinned Prettier
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/components/transcription-synchronized-playback.tsx')
+          text = path.read_text(encoding='utf-8')
+          old = '  const events = revision?.events ?? [];\n'
+          new = '  const events = useMemo(() => revision?.events ?? [], [revision]);\n'
+          if old not in text:
+              raise SystemExit('expected hook expression not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          npm run format
+      - uses: actions/upload-artifact@v6
+        with:
+          name: sax044-formatted-sources
+          path: |
+            docs/contracts/synchronized-local-playback-v1.md
+            src/components/transcription-synchronized-playback.tsx
+            src/components/transcription-synchronized-playback-lifecycle.test.tsx
+            src/components/transcription-synchronized-playback.test.tsx
+            src/lib/local-audio-verification.test.ts
+          retention-days: 1
