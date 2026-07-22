@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import "./playback.css";
 import "./progress.css";
 import "./review.css";
 
