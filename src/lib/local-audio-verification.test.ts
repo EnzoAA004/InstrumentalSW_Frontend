@@ -16,11 +16,17 @@ function syntheticFile(name: string, bytes: Uint8Array = new TextEncoder().encod
   });
 }
 
+function exactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
 function digestProvider(hex = ABC_SHA256): Crypto {
   const bytes = Uint8Array.from(hex.match(/.{2}/g) ?? [], (part) => Number.parseInt(part, 16));
   return {
     subtle: {
-      digest: vi.fn().mockResolvedValue(bytes.buffer),
+      digest: vi.fn().mockResolvedValue(exactArrayBuffer(bytes)),
     },
   } as unknown as Crypto;
 }
@@ -32,7 +38,9 @@ async function expectCode(promise: Promise<unknown>, code: string): Promise<void
 describe("sha256Hex", () => {
   it("calculates the known lowercase SHA-256 for synthetic bytes", async () => {
     const bytes = new TextEncoder().encode("abc");
-    await expect(sha256Hex(bytes.buffer, webcrypto as unknown as Crypto)).resolves.toBe(ABC_SHA256);
+    await expect(sha256Hex(exactArrayBuffer(bytes), webcrypto as unknown as Crypto)).resolves.toBe(
+      ABC_SHA256,
+    );
   });
 });
 
@@ -163,7 +171,9 @@ describe("verifyLocalAudioFile", () => {
     await Promise.resolve();
     during.abort();
     resolveDigest(
-      Uint8Array.from(ABC_SHA256.match(/.{2}/g) ?? [], (part) => Number.parseInt(part, 16)).buffer,
+      exactArrayBuffer(
+        Uint8Array.from(ABC_SHA256.match(/.{2}/g) ?? [], (part) => Number.parseInt(part, 16)),
+      ),
     );
     await expect(promise).rejects.toMatchObject({ name: "AbortError" });
   });
