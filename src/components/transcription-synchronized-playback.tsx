@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { RevisionArtifactDownloads } from "@/components/revision-artifact-downloads";
 import {
   getTranscription,
   TranscriptionApiError,
@@ -392,6 +393,11 @@ export function TranscriptionSynchronizedPlayback({
             activeEventIds={activeEventIds}
             canSeek={objectUrl !== null}
             onSeek={seekToEvent}
+          />
+
+          <RevisionArtifactDownloads
+            jobId={jobId}
+            revisionNumber={revision.revision_number}
           />
         </>
       ) : null}
