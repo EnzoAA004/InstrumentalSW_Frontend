@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { RevisionArtifactDownloads } from "@/components/revision-artifact-downloads";
 import { TranscriptionApiError } from "@/lib/transcription-api";
 import {
   buildRevisionOperations,
@@ -423,6 +424,11 @@ export function TranscriptionRevisionEditor({
               <p>No processing worker is connected yet.</p>
             </div>
           ) : null}
+
+          <RevisionArtifactDownloads
+            jobId={jobId}
+            revisionNumber={serverRevision.revision_number}
+          />
         </>
       ) : null}
 
