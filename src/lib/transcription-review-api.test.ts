@@ -89,9 +89,11 @@ describe("getTranscriptionReview", () => {
   ])("maps public %i envelopes", async (status, code) => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        response(status, { code, message: "Readable public message.", field: "job_id" }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          response(status, { code, message: "Readable public message.", field: "job_id" }),
+        ),
     );
 
     await expect(getTranscriptionReview(JOB_ID)).rejects.toMatchObject({ code, status });
