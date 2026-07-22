@@ -51,10 +51,7 @@ export function TranscriptionProgress({
   }, []);
 
   const runRequest = useCallback(async () => {
-    if (!mountedRef.current || inFlightRef.current) {
-      return;
-    }
-
+    if (!mountedRef.current || inFlightRef.current) return;
     clearTimer();
     const sequence = ++requestSequenceRef.current;
     const controller = new AbortController();
@@ -65,10 +62,7 @@ export function TranscriptionProgress({
 
     try {
       const current = await load(jobId, controller.signal);
-      if (!mountedRef.current || sequence !== requestSequenceRef.current) {
-        return;
-      }
-
+      if (!mountedRef.current || sequence !== requestSequenceRef.current) return;
       setJob(current);
       if (current.status === "FAILED") {
         automaticRef.current = false;
@@ -82,7 +76,6 @@ export function TranscriptionProgress({
         setViewState("unknown_status");
         return;
       }
-
       setViewState(automaticRef.current ? "active" : "paused");
       if (automaticRef.current) {
         timerRef.current = setTimeout(() => {
@@ -98,42 +91,31 @@ export function TranscriptionProgress({
       ) {
         return;
       }
-
       automaticRef.current = false;
       setAutomaticUpdates(false);
       setViewState("error");
-      if (caught instanceof TranscriptionApiError) {
-        setError({ code: caught.code, message: caught.message });
-      } else {
-        setError({
-          code: null,
-          message: "An unexpected error prevented the status update. Try again.",
-        });
-      }
+      setError(
+        caught instanceof TranscriptionApiError
+          ? { code: caught.code, message: caught.message }
+          : { code: null, message: "An unexpected error prevented the status update. Try again." },
+      );
     } finally {
       if (sequence === requestSequenceRef.current) {
         inFlightRef.current = false;
         controllerRef.current = null;
-        if (mountedRef.current) {
-          setRequestPending(false);
-        }
+        if (mountedRef.current) setRequestPending(false);
       }
     }
   }, [clearTimer, jobId, load, pollIntervalMs]);
 
   useEffect(() => {
-    runRequestRef.current = () => {
-      void runRequest();
-    };
+    runRequestRef.current = () => void runRequest();
   }, [runRequest]);
 
   useEffect(() => {
     mountedRef.current = true;
     automaticRef.current = true;
-    queueMicrotask(() => {
-      runRequestRef.current();
-    });
-
+    queueMicrotask(() => runRequestRef.current());
     return () => {
       mountedRef.current = false;
       clearTimer();
@@ -145,9 +127,7 @@ export function TranscriptionProgress({
   }, [clearTimer]);
 
   useEffect(() => {
-    if (viewState === "error") {
-      alertRef.current?.focus();
-    }
+    if (viewState === "error") alertRef.current?.focus();
   }, [viewState, error]);
 
   function pause() {
@@ -163,9 +143,7 @@ export function TranscriptionProgress({
   }
 
   function resume() {
-    if (inFlightRef.current) {
-      return;
-    }
+    if (inFlightRef.current) return;
     automaticRef.current = true;
     setAutomaticUpdates(true);
     setViewState(job === null ? "loading" : "active");
@@ -258,6 +236,9 @@ export function TranscriptionProgress({
             Resume automatic updates
           </button>
         ) : null}
+        <Link className="text-link" href={`/transcriptions/${jobId}/review`}>
+          View notes
+        </Link>
         <Link className="text-link" href="/">
           Back to upload
         </Link>

@@ -14,6 +14,34 @@ export interface TranscriptionJob {
   input_mode: InputMode;
 }
 
+export interface TranscriptionReviewEvent {
+  index: number;
+  pitch_concert_midi: number;
+  written_pitch_midi: number;
+  onset_seconds: number;
+  offset_seconds: number;
+  velocity: number;
+  confidence: number;
+  is_low_confidence: boolean;
+}
+
+export interface TranscriptionReview {
+  job_id: string;
+  schema_version: "1.0";
+  note_event_schema_version: "1.0";
+  low_confidence_policy_version: "1.0";
+  written_pitch_policy_version: "1.0";
+  saxophone_type: SaxophoneType;
+  low_confidence_threshold: number;
+  confidence_interpretation: "model_signal_not_calibrated_accuracy";
+  confidence_method: string;
+  summary: {
+    event_count: number;
+    low_confidence_count: number;
+  };
+  events: TranscriptionReviewEvent[];
+}
+
 export interface SubmitTranscriptionInput {
   file: File;
   saxophoneType: SaxophoneType;
@@ -22,6 +50,10 @@ export interface SubmitTranscriptionInput {
 
 export type SubmitTranscription = (input: SubmitTranscriptionInput) => Promise<TranscriptionJob>;
 export type GetTranscription = (jobId: string, signal?: AbortSignal) => Promise<TranscriptionJob>;
+export type LoadTranscriptionReview = (
+  jobId: string,
+  signal?: AbortSignal,
+) => Promise<TranscriptionReview>;
 
 interface PublicErrorPayload {
   code: string;
@@ -75,15 +107,7 @@ export async function getTranscription(
   jobId: string,
   signal?: AbortSignal,
 ): Promise<TranscriptionJob> {
-  if (!UUID_PATTERN.test(jobId)) {
-    throw new TranscriptionApiError(
-      "INVALID_JOB_ID",
-      "Job ID must be a valid UUID.",
-      "job_id",
-      400,
-    );
-  }
-
+  validateJobId(jobId);
   let response: Response;
   try {
     response = await fetch(
@@ -102,6 +126,42 @@ export async function getTranscription(
     throw invalidResponse(response.status);
   }
   return job;
+}
+
+export async function getTranscriptionReview(
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<TranscriptionReview> {
+  validateJobId(jobId);
+  let response: Response;
+  try {
+    response = await fetch(
+      `${backendBaseUrl()}${TRANSCRIPTIONS_PATH}/${encodeURIComponent(jobId)}/review`,
+      { method: "GET", signal },
+    );
+  } catch (error) {
+    if (signal?.aborted) {
+      throw error;
+    }
+    throw unavailable();
+  }
+
+  const payload = await readJson(response);
+  if (response.status !== 200) {
+    if (isPublicErrorPayload(payload)) {
+      throw new TranscriptionApiError(
+        payload.code,
+        payload.message,
+        payload.field,
+        response.status,
+      );
+    }
+    throw invalidResponse(response.status);
+  }
+  if (!isTranscriptionReview(payload) || payload.job_id.toLowerCase() !== jobId.toLowerCase()) {
+    throw invalidResponse(response.status);
+  }
+  return payload;
 }
 
 async function parseJobResponse(
@@ -125,6 +185,17 @@ async function parseJobResponse(
     throw invalidResponse(response.status);
   }
   return payload;
+}
+
+function validateJobId(jobId: string): void {
+  if (!UUID_PATTERN.test(jobId)) {
+    throw new TranscriptionApiError(
+      "INVALID_JOB_ID",
+      "Job ID must be a valid UUID.",
+      "job_id",
+      400,
+    );
+  }
 }
 
 function backendBaseUrl(): string {
@@ -183,9 +254,7 @@ function isTranscriptionJob(value: unknown): value is TranscriptionJob {
     typeof value.filename === "string" &&
     value.filename.trim().length > 0 &&
     !/[\\/]/.test(value.filename) &&
-    typeof value.size_bytes === "number" &&
-    Number.isSafeInteger(value.size_bytes) &&
-    value.size_bytes >= 0 &&
+    isNonNegativeInteger(value.size_bytes) &&
     typeof value.audio_sha256 === "string" &&
     SHA256_PATTERN.test(value.audio_sha256) &&
     typeof value.saxophone_type === "string" &&
@@ -193,6 +262,78 @@ function isTranscriptionJob(value: unknown): value is TranscriptionJob {
     typeof value.input_mode === "string" &&
     INPUT_MODES.includes(value.input_mode as InputMode)
   );
+}
+
+function isTranscriptionReview(value: unknown): value is TranscriptionReview {
+  if (!isRecord(value) || !isRecord(value.summary) || !Array.isArray(value.events)) {
+    return false;
+  }
+  if (
+    typeof value.job_id !== "string" ||
+    !UUID_PATTERN.test(value.job_id) ||
+    value.schema_version !== "1.0" ||
+    value.note_event_schema_version !== "1.0" ||
+    value.low_confidence_policy_version !== "1.0" ||
+    value.written_pitch_policy_version !== "1.0" ||
+    typeof value.saxophone_type !== "string" ||
+    !SAXOPHONE_TYPES.includes(value.saxophone_type as SaxophoneType) ||
+    !isUnitInterval(value.low_confidence_threshold) ||
+    value.confidence_interpretation !== "model_signal_not_calibrated_accuracy" ||
+    typeof value.confidence_method !== "string" ||
+    value.confidence_method.trim().length === 0 ||
+    !isNonNegativeInteger(value.summary.event_count) ||
+    !isNonNegativeInteger(value.summary.low_confidence_count) ||
+    value.summary.low_confidence_count > value.summary.event_count ||
+    value.summary.event_count !== value.events.length
+  ) {
+    return false;
+  }
+
+  let lowConfidenceCount = 0;
+  for (let index = 0; index < value.events.length; index += 1) {
+    const event = value.events[index];
+    if (!isReviewEvent(event, index)) {
+      return false;
+    }
+    if (event.is_low_confidence) {
+      lowConfidenceCount += 1;
+    }
+  }
+  return lowConfidenceCount === value.summary.low_confidence_count;
+}
+
+function isReviewEvent(value: unknown, expectedIndex: number): value is TranscriptionReviewEvent {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    value.index === expectedIndex &&
+    isMidi(value.pitch_concert_midi) &&
+    isMidi(value.written_pitch_midi) &&
+    isFiniteNumber(value.onset_seconds) &&
+    value.onset_seconds >= 0 &&
+    isFiniteNumber(value.offset_seconds) &&
+    value.offset_seconds > value.onset_seconds &&
+    isMidi(value.velocity) &&
+    isUnitInterval(value.confidence) &&
+    typeof value.is_low_confidence === "boolean"
+  );
+}
+
+function isMidi(value: unknown): value is number {
+  return Number.isInteger(value) && typeof value === "number" && value >= 0 && value <= 127;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && typeof value === "number" && value >= 0;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isUnitInterval(value: unknown): value is number {
+  return isFiniteNumber(value) && value >= 0 && value <= 1;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

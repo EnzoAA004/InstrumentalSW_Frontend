@@ -1,6 +1,6 @@
 # InstrumentalSW Frontend
 
-Accessible Next.js interface for InstrumentalSW (Saxo). SAX-040 creates transcription jobs from MP3/WAV files; SAX-041 adds a dedicated read-only route that repeatedly retrieves the current job state through the Spring Boot product API.
+Accessible Next.js interface for InstrumentalSW (Saxo). SAX-040 creates transcription jobs, SAX-041 displays current server status with controlled polling, and SAX-042 adds a read-only note timeline and semantic confidence review through the Spring Boot product API.
 
 ```text
 Browser / Next.js :3000
@@ -44,7 +44,7 @@ The page runs at `http://localhost:3000`. Start Spring separately at `http://loc
 NEXT_PUBLIC_SAXO_API_BASE_URL=http://localhost:8080
 ```
 
-The local Backend URL is the fallback. Both POST and GET append `/api/v1/transcriptions`. Do not configure a FastAPI URL in the browser.
+The local Backend URL is the fallback. Do not configure a FastAPI URL in the browser.
 
 ## Quality
 
@@ -68,55 +68,19 @@ npm run quality
 5. Next.js sends exact multipart fields to Spring Boot.
 6. HTTP 202 displays all returned job fields.
 
-Exact multipart fields:
-
-```text
-file
-saxophone_type
-input_mode
-```
-
 The browser lets `fetch` create the multipart boundary. It does not upload automatically, read audio for playback, create an object URL, or show a waveform.
 
-The creation result offers both:
-
-```text
-View job progress
-Upload another audio file
-```
+The creation result offers `View job progress` and `Upload another audio file`.
 
 ## View current job status
-
-Dynamic route:
 
 ```text
 /transcriptions/{job_id}
 ```
 
-The identifier is held in the URL, so the route works after browser reload without localStorage, sessionStorage, or cookies.
+The UUID is in the URL, so reload requires no localStorage, sessionStorage, or cookies. The typed client calls only the Backend, validates the complete job and response identity, and performs no internal retry.
 
-The typed client calls only:
-
-```http
-GET ${NEXT_PUBLIC_SAXO_API_BASE_URL}/api/v1/transcriptions/{job_id}
-```
-
-It validates the UUID before `fetch`, accepts only HTTP 200, verifies the complete seven-field job and response identity, and performs no internal retry.
-
-The page displays:
-
-```text
-Job ID
-Current status
-Filename
-Saxophone
-Audio mode
-File size
-Audio SHA-256
-automatic update state
-```
-
-## Polling policy
+Polling policy:
 
 ```text
 first GET: immediate after mount
@@ -124,51 +88,72 @@ interval: 3000 ms after the previous request completes
 maximum concurrent requests: 1
 ```
 
-Recursive `setTimeout` prevents overlap. `AbortController`, timer cleanup, and request sequence numbers protect unmount and stale-response cases.
+Recursive `setTimeout`, `AbortController`, cleanup, and request sequence numbers prevent overlap and stale updates. The page retains `Refresh now`, `Pause/Resume automatic updates`, `Try again`, and `Back to upload`, and adds `View notes`.
 
-Controls:
+The AI contract currently defines only `UPLOADED` and `FAILED`; unknown values are displayed exactly and pause polling. No percentage, ETA, or invented stage is shown.
 
-```text
-Refresh now
-Pause automatic updates
-Resume automatic updates
-Try again
-Back to upload
-```
-
-The current AI contract defines only:
+## View transcription notes
 
 ```text
-UPLOADED → active automatic updates
-FAILED   → terminal, automatic updates stopped
+/transcriptions/{job_id}/review
 ```
 
-Any other status is displayed exactly, marked as outside the known contract, and pauses automatic updates. Errors also pause polling and require explicit retry. The last valid job remains visible after a transient failure.
+The route works after reload without browser storage. It sends one bodyless request to:
 
-## No false progress
+```http
+GET ${NEXT_PUBLIC_SAXO_API_BASE_URL}/api/v1/transcriptions/{job_id}/review
+```
 
-The page reports server state only. It does not display a percentage, elapsed-time animation, ETA, simulated model stage, or unsupported status such as PROCESSING or COMPLETED.
+The review client validates UUID before fetch, accepts only HTTP 200, verifies all versions, identity, instrument, threshold, confidence metadata, summary counts, event order/indices, MIDI values, timing, velocity, confidence, and low-confidence markers. It performs no retry and no review polling.
+
+Explicit review states:
+
+```text
+loading
+ready
+empty
+not_ready
+not_found
+error
+```
+
+A successful empty review shows `No note events were produced.` A 409 shows `Transcription notes are not available yet.` No synthetic timeline is displayed for not-ready work.
+
+## Timeline and table
+
+The HTML/CSS timeline starts at zero, uses the maximum offset as visual duration, derives width from onset/offset, preserves contract order, supports overlapping events, and scrolls horizontally. It does not represent audio, playback, measures, or quantization.
+
+Every event is also present in a semantic table with index, written/concert MIDI, onset, offset, derived duration, velocity, confidence, and confidence status.
+
+Low-confidence events remain visible and use text, dashed borders, a pattern, and accessible description. The page states:
+
+```text
+Confidence is a model signal, not calibrated accuracy.
+```
+
+Confidence is not converted to a percentage.
 
 ## Accessibility and responsive layout
 
-- visible labels and one route title;
-- `aria-live="polite"` for current status and polling text;
-- `role="alert"` and programmatic focus for errors;
-- explicit keyboard-operable controls and visible focus;
-- state represented textually, never only through color;
-- long UUID and SHA-256 values wrap;
-- no mandatory animation;
-- metadata and actions collapse into a single-column mobile layout.
-
-The existing warm light background, neutral surfaces, charcoal text, green actions, amber focus, and visible borders are preserved without a blue primary treatment, emoji, or component library.
+- one route `h1`;
+- polite live text for loading and summaries;
+- `role="alert"` plus programmatic focus for errors;
+- keyboard-operable links and controls with visible focus;
+- state never represented only by color;
+- wrapping for UUID and technical values;
+- horizontal overflow for timeline/table;
+- responsive navigation and metadata;
+- no mandatory animation, emoji, or blue primary treatment.
 
 ## Boundaries
 
-SAX-041 does not implement notes, confidence markers, timeline, score viewing, audio/MIDI playback, editing, downloads, persistence, service workers, background sync, WebSocket, SSE, long polling, authentication, analytics, SAX-042, or later stories.
+SAX-042 does not implement synthetic notes, inference, direct FastAPI calls, review polling, editing, deletion, regeneration, history, audio/MIDI playback, waveform, synchronization, SVG/PDF, downloads, persistence, service workers, authentication, analytics, SAX-043, or later stories.
 
 Documentation:
 
 - [`docs/contracts/audio-upload-ui-v1.md`](docs/contracts/audio-upload-ui-v1.md)
 - [`docs/contracts/job-progress-ui-v1.md`](docs/contracts/job-progress-ui-v1.md)
+- [`docs/contracts/transcription-review-ui-v1.md`](docs/contracts/transcription-review-ui-v1.md)
 - [`docs/tdd/iteration-001.md`](docs/tdd/iteration-001.md)
 - [`docs/tdd/iteration-002.md`](docs/tdd/iteration-002.md)
+- [`docs/tdd/iteration-003.md`](docs/tdd/iteration-003.md)
