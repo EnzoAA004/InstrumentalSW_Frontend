@@ -66,8 +66,12 @@ afterEach(() => {
 describe("artifact client coverage", () => {
   it("rejects invalid job, revision, and artifact identities before network access", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
-    await expect(getRevisionArtifacts("invalid", 0)).rejects.toMatchObject({ code: "INVALID_JOB_ID" });
-    await expect(getRevisionArtifacts(JOB_ID, -1)).rejects.toMatchObject({ code: "REVISION_NOT_FOUND" });
+    await expect(getRevisionArtifacts("invalid", 0)).rejects.toMatchObject({
+      code: "INVALID_JOB_ID",
+    });
+    await expect(getRevisionArtifacts(JOB_ID, -1)).rejects.toMatchObject({
+      code: "REVISION_NOT_FOUND",
+    });
     await expect(downloadRevisionArtifact(JOB_ID, 0, "../midi")).rejects.toMatchObject({
       code: "INVALID_BACKEND_RESPONSE",
     });
@@ -98,7 +102,7 @@ describe("artifact client coverage", () => {
       .mockResolvedValueOnce(metadataResponse())
       .mockResolvedValueOnce(binaryResponse({ "Content-Length": "4" }));
     await expect(
-      downloadRevisionArtifact(JOB_ID, 2, "midi", undefined, undefined),
+      downloadRevisionArtifact(JOB_ID, 2, "midi", undefined, {} as Crypto),
     ).rejects.toMatchObject({ code: "WEB_CRYPTO_UNAVAILABLE" });
   });
 
@@ -116,7 +120,9 @@ describe("artifact client coverage", () => {
     });
 
     vi.restoreAllMocks();
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(metadataResponse({ message: "missing code" }, 500));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      metadataResponse({ message: "missing code" }, 500),
+    );
     await expect(getRevisionArtifacts(JOB_ID, 2)).rejects.toMatchObject({
       code: "INVALID_BACKEND_RESPONSE",
     });
