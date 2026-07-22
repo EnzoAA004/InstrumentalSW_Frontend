@@ -11,12 +11,7 @@ import {
 } from "@/lib/transcription-api";
 
 export type ProgressViewState =
-  | "loading"
-  | "active"
-  | "paused"
-  | "terminal"
-  | "error"
-  | "unknown_status";
+  "loading" | "active" | "paused" | "terminal" | "error" | "unknown_status";
 
 interface ProgressError {
   code: string | null;
@@ -169,8 +164,8 @@ export function TranscriptionProgress({
         <p className="eyebrow">InstrumentalSW</p>
         <h1 id="progress-title">Job progress</h1>
         <p className="intro-copy">
-          This page reports the current state returned by the server. It does not estimate a percentage
-          or processing stage.
+          This page reports the current state returned by the server. It does not estimate a
+          percentage or processing stage.
         </p>
       </div>
 
@@ -179,7 +174,12 @@ export function TranscriptionProgress({
           <h2>We could not update the job</h2>
           <p>{error.message}</p>
           {error.code !== null ? <p className="technical-line">Code: {error.code}</p> : null}
-          <button className="secondary-button" type="button" onClick={refresh} disabled={requestPending}>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={refresh}
+            disabled={requestPending}
+          >
             Try again
           </button>
         </div>
@@ -201,7 +201,9 @@ export function TranscriptionProgress({
       )}
 
       <div className="polling-status" aria-live="polite">
-        <span>{automaticUpdates ? "Automatic updates are active." : "Automatic updates are paused."}</span>
+        <span>
+          {automaticUpdates ? "Automatic updates are active." : "Automatic updates are paused."}
+        </span>
         <span>
           {requestPending
             ? "Checking for updates."
@@ -216,7 +218,12 @@ export function TranscriptionProgress({
       ) : null}
 
       <div className="progress-actions">
-        <button className="secondary-button" type="button" onClick={refresh} disabled={requestPending}>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={refresh}
+          disabled={requestPending}
+        >
           Refresh now
         </button>
         {showPause ? (
@@ -258,7 +265,15 @@ function JobDetails({ job }: { job: TranscriptionJob }) {
   );
 }
 
-function Detail({ label, value, technical = false }: { label: string; value: string; technical?: boolean }) {
+function Detail({
+  label,
+  value,
+  technical = false,
+}: {
+  label: string;
+  value: string;
+  technical?: boolean;
+}) {
   return (
     <div className="detail-row">
       <dt>{label}</dt>
