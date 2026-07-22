@@ -427,6 +427,9 @@ export function TranscriptionRevisionEditor({
       ) : null}
 
       <nav className="progress-actions" aria-label="Revision editor navigation">
+        <Link className="text-link" href={`/transcriptions/${jobId}/review/playback`}>
+          Play synchronized review
+        </Link>
         <Link className="text-link" href={`/transcriptions/${jobId}/review`}>
           Back to read-only review
         </Link>
