@@ -100,18 +100,23 @@ export function TranscriptionReviewView({
 }
 
 function ReviewContent({ review, empty }: { review: TranscriptionReview; empty: boolean }) {
-  const duration = review.events.reduce((maximum, event) => Math.max(maximum, event.offset_seconds), 0);
+  const duration = review.events.reduce(
+    (maximum, event) => Math.max(maximum, event.offset_seconds),
+    0,
+  );
   return (
     <div>
       <p className="review-summary" aria-live="polite">
-        {review.summary.event_count} note events · {review.summary.low_confidence_count} low confidence
+        {review.summary.event_count} note events · {review.summary.low_confidence_count} low
+        confidence
       </p>
-      <p id="confidence-explanation">
-        Confidence is a model signal, not calibrated accuracy.
-      </p>
+      <p id="confidence-explanation">Confidence is a model signal, not calibrated accuracy.</p>
       <dl className="job-details compact-details">
         <Detail label="Saxophone" value={review.saxophone_type} />
-        <Detail label="Low-confidence threshold" value={formatNumber(review.low_confidence_threshold)} />
+        <Detail
+          label="Low-confidence threshold"
+          value={formatNumber(review.low_confidence_threshold)}
+        />
         <Detail label="Confidence method" value={review.confidence_method} technical />
       </dl>
 
@@ -133,14 +138,18 @@ function Timeline({ events, duration }: { events: TranscriptionReviewEvent[]; du
       <ol
         className="note-timeline"
         aria-label="Note event timeline"
-        style={{ minWidth: `${Math.max(48, duration * 14)}rem`, height: `${events.length * 3.4 + 1}rem` }}
+        style={{
+          minWidth: `${Math.max(48, duration * 14)}rem`,
+          height: `${events.length * 3.4 + 1}rem`,
+        }}
       >
         <li className="timeline-origin" aria-hidden="true">
           0 s
         </li>
         {events.map((event, order) => {
           const left = duration === 0 ? 0 : (event.onset_seconds / duration) * 100;
-          const width = duration === 0 ? 0 : ((event.offset_seconds - event.onset_seconds) / duration) * 100;
+          const width =
+            duration === 0 ? 0 : ((event.offset_seconds - event.onset_seconds) / duration) * 100;
           return (
             <li
               key={event.index}
@@ -149,7 +158,11 @@ function Timeline({ events, duration }: { events: TranscriptionReviewEvent[]; du
               data-onset-seconds={event.onset_seconds}
               data-offset-seconds={event.offset_seconds}
               aria-describedby="confidence-explanation"
-              style={{ left: `${left}%`, width: `${Math.max(width, 1)}%`, top: `${order * 3.4 + 1.2}rem` }}
+              style={{
+                left: `${left}%`,
+                width: `${Math.max(width, 1)}%`,
+                top: `${order * 3.4 + 1.2}rem`,
+              }}
             >
               <strong>Written MIDI {event.written_pitch_midi}</strong>
               <span>Concert MIDI {event.pitch_concert_midi}</span>
@@ -181,7 +194,10 @@ function EventTable({ events }: { events: TranscriptionReviewEvent[] }) {
         </thead>
         <tbody>
           {events.map((event) => (
-            <tr key={event.index} className={event.is_low_confidence ? "low-confidence-row" : undefined}>
+            <tr
+              key={event.index}
+              className={event.is_low_confidence ? "low-confidence-row" : undefined}
+            >
               <td>{event.index}</td>
               <td>{event.written_pitch_midi}</td>
               <td>{event.pitch_concert_midi}</td>
@@ -201,7 +217,15 @@ function EventTable({ events }: { events: TranscriptionReviewEvent[] }) {
   );
 }
 
-function Detail({ label, value, technical = false }: { label: string; value: string; technical?: boolean }) {
+function Detail({
+  label,
+  value,
+  technical = false,
+}: {
+  label: string;
+  value: string;
+  technical?: boolean;
+}) {
   return (
     <div className="detail-row">
       <dt>{label}</dt>
