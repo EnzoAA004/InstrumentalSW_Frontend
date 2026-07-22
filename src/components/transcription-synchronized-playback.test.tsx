@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -107,7 +107,9 @@ function file(name = "reattached.wav"): File {
   return new File([new TextEncoder().encode("abc")], name, { type: "audio/wav" });
 }
 
-function renderPlayback(overrides: Partial<React.ComponentProps<typeof TranscriptionSynchronizedPlayback>> = {}) {
+function renderPlayback(
+  overrides: Partial<React.ComponentProps<typeof TranscriptionSynchronizedPlayback>> = {},
+) {
   const loadJob = vi.fn().mockResolvedValue(JOB);
   const loadHistory = vi.fn().mockResolvedValue(HISTORY);
   const loadRevision = vi.fn().mockResolvedValue(REVISION);
@@ -126,11 +128,20 @@ function renderPlayback(overrides: Partial<React.ComponentProps<typeof Transcrip
       {...overrides}
     />,
   );
-  return { ...result, loadJob, loadHistory, loadRevision, verifyFile, createObjectUrl, revokeObjectUrl };
+  return {
+    ...result,
+    loadJob,
+    loadHistory,
+    loadRevision,
+    verifyFile,
+    createObjectUrl,
+    revokeObjectUrl,
+  };
 }
 
 async function attachAudio(user = userEvent.setup()): Promise<HTMLAudioElement> {
-  await user.upload(screen.getByLabelText("Select original audio"), file());
+  const input = await screen.findByLabelText("Select original audio");
+  await user.upload(input, file());
   return (await screen.findByTestId("verified-local-audio")) as HTMLAudioElement;
 }
 
@@ -142,7 +153,7 @@ describe("TranscriptionSynchronizedPlayback", () => {
     expect(await screen.findByRole("heading", { name: "Synchronized review playback" })).toBeVisible();
     expect(await screen.findByText("Revision 2")).toBeVisible();
     expect(screen.getByText("Select the original MP3 or WAV used for this transcription.")).toBeVisible();
-    expect(screen.queryByRole("audio")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("verified-local-audio")).not.toBeInTheDocument();
     expect(loadJob).toHaveBeenCalledWith(JOB_ID, expect.any(AbortSignal));
     expect(loadHistory).toHaveBeenCalledWith(JOB_ID, expect.any(AbortSignal));
     expect(loadRevision).toHaveBeenCalledWith(JOB_ID, 2, expect.any(AbortSignal));
@@ -269,18 +280,20 @@ describe("TranscriptionSynchronizedPlayback", () => {
     ["TRANSCRIPTION_NOT_FOUND", "Transcription job not found."],
     ["BACKEND_UNAVAILABLE", "The Saxo service is currently unavailable. Try again."],
   ])("shows focused API error %s without polling", async (code, message) => {
-    vi.useFakeTimers();
-    const loadHistory = vi.fn().mockRejectedValue(new TranscriptionApiError(code, message, "job_id", 409));
+    const loadHistory = vi
+      .fn()
+      .mockRejectedValue(new TranscriptionApiError(code, message, "job_id", 409));
     const { loadJob, loadRevision } = renderPlayback({ loadHistory });
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(message);
     expect(alert).toHaveFocus();
+    vi.useFakeTimers();
     await vi.advanceTimersByTimeAsync(10_000);
+    vi.useRealTimers();
     expect(loadJob).toHaveBeenCalledTimes(1);
     expect(loadHistory).toHaveBeenCalledTimes(1);
     expect(loadRevision).not.toHaveBeenCalled();
-    vi.useRealTimers();
   });
 
   it("shows controlled mismatch and media decode errors with focused alerts", async () => {
@@ -313,11 +326,13 @@ describe("TranscriptionSynchronizedPlayback", () => {
     const user = userEvent.setup();
     renderPlayback({ verifyFile });
     expect(await screen.findAllByRole("heading", { level: 1 })).toHaveLength(1);
-    const input = screen.getByLabelText("Select original audio");
+    const input = await screen.findByLabelText("Select original audio");
     input.focus();
     await user.upload(input, file());
     expect(screen.getByText("Verifying audio content…")).toHaveAttribute("aria-live", "polite");
-    resolveVerification({ sizeBytes: 3, sha256: SHA });
+    await act(async () => {
+      resolveVerification({ sizeBytes: 3, sha256: SHA });
+    });
     const audio = await screen.findByTestId("verified-local-audio");
     Object.defineProperty(audio, "currentTime", { configurable: true, writable: true, value: 0.75 });
     fireEvent.timeUpdate(audio);
