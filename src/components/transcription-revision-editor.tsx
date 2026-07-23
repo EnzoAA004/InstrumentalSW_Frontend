@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { RevisionArtifactDownloads } from "@/components/revision-artifact-downloads";
 import { TranscriptionApiError } from "@/lib/transcription-api";
 import {
   buildRevisionOperations,
@@ -50,6 +51,8 @@ export function TranscriptionRevisionEditor({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const localIdRef = useRef(0);
+  const showArtifactDownloads =
+    loadHistory === getTranscriptionRevisionHistory && loadRevision === getTranscriptionRevision;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -422,6 +425,13 @@ export function TranscriptionRevisionEditor({
               <p>Regeneration requested.</p>
               <p>No processing worker is connected yet.</p>
             </div>
+          ) : null}
+
+          {showArtifactDownloads ? (
+            <RevisionArtifactDownloads
+              jobId={jobId}
+              revisionNumber={serverRevision.revision_number}
+            />
           ) : null}
         </>
       ) : null}

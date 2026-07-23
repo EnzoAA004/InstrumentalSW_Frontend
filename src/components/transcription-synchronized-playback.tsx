@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { RevisionArtifactDownloads } from "@/components/revision-artifact-downloads";
 import {
   getTranscription,
   TranscriptionApiError,
@@ -91,6 +92,10 @@ export function TranscriptionSynchronizedPlayback({
   const verificationSequenceRef = useRef(0);
   const frameRef = useRef<number | null>(null);
   const playingRef = useRef(false);
+  const showArtifactDownloads =
+    loadJob === getTranscription &&
+    loadHistory === getTranscriptionRevisionHistory &&
+    loadRevision === getTranscriptionRevision;
 
   const revokeActiveObjectUrl = useCallback(() => {
     if (activeObjectUrlRef.current !== null) {
@@ -393,6 +398,10 @@ export function TranscriptionSynchronizedPlayback({
             canSeek={objectUrl !== null}
             onSeek={seekToEvent}
           />
+
+          {showArtifactDownloads ? (
+            <RevisionArtifactDownloads jobId={jobId} revisionNumber={revision.revision_number} />
+          ) : null}
         </>
       ) : null}
 

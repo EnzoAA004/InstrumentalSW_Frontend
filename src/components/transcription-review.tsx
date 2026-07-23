@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { LatestRevisionArtifactDownloads } from "@/components/latest-revision-artifact-downloads";
 import {
   getTranscriptionReview,
   TranscriptionApiError,
@@ -26,6 +27,7 @@ export function TranscriptionReviewView({
   const [review, setReview] = useState<TranscriptionReview | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
+  const showArtifactDownloads = load === getTranscriptionReview;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,7 +87,12 @@ export function TranscriptionReviewView({
         </div>
       ) : null}
 
-      {review !== null ? <ReviewContent review={review} empty={state === "empty"} /> : null}
+      {review !== null ? (
+        <>
+          <ReviewContent review={review} empty={state === "empty"} />
+          {showArtifactDownloads ? <LatestRevisionArtifactDownloads jobId={jobId} /> : null}
+        </>
+      ) : null}
 
       <nav className="progress-actions" aria-label="Review navigation">
         {review !== null ? (
